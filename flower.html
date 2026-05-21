@@ -607,8 +607,12 @@ body{margin:0;padding:0;background:#9A7A78;font-family:-apple-system,'Noto Sans 
 <div id="toast"></div>
 
 <script>
-'use strict';
-const API='https://script.google.com/macros/s/AKfycbzJSm_7k5RCI__5zehjIv7swtbxioee_4BGfjzD7QV7Ig0yQq_BBJrIc8QZpVrni5jO/exec';
+// ── Compatibility helpers ──
+function pad2(n){return n<10?'0'+n:String(n);}
+function fmtDateTime(d){
+  return d.getFullYear()+'/'+pad2(d.getMonth()+1)+'/'+pad2(d.getDate())+' '+pad2(d.getHours())+':'+pad2(d.getMinutes());
+}
+var API='https://script.google.com/macros/s/AKfycbzJSm_7k5RCI__5zehjIv7swtbxioee_4BGfjzD7QV7Ig0yQq_BBJrIc8QZpVrni5jO/exec';
 
 // ── State ──
 var E=[],IT=[],MB=[],AL=[],GR=[],TR=[];
@@ -629,9 +633,9 @@ function showToast(m,d){
 function showLoading(v){$('loadingOverlay').classList.toggle('show',v);}
 function setSyncState(s){
   var d=$('syncDot'),l=$('syncLabel'),t=$('syncTime');
-  d.className='sync-dot'+(s==='syncing'?' syncing':s==='error'?' error':'');
-  l.textContent=s==='syncing'?'同步中…':s==='error'?'同步失敗':'已同步';
-  if(s==='ok'&&t)var now=new Date();var yy=now.getFullYear();var mm=String(now.getMonth()+1).padStart(2,'0');var dd=String(now.getDate()).padStart(2,'0');var hh=String(now.getHours()).padStart(2,'0');var mi=String(now.getMinutes()).padStart(2,'0');t.textContent=yy+'/'+mm+'/'+dd+' '+hh+':'+mi;
+  if(d)d.className='sync-dot'+(s==='syncing'?' syncing':s==='error'?' error':'');
+  if(l)l.textContent=s==='syncing'?'同步中…':s==='error'?'同步失敗':'已同步';
+  if(s==='ok'&&t){t.textContent=fmtDateTime(new Date());}
 }
 function parseArr(v){
   if(Array.isArray(v))return v;
