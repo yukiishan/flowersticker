@@ -151,12 +151,19 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
   background:var(--bg);z-index:950;
   display:flex;flex-direction:column;
   transform:translateX(100%);
-  transition:transform .28s cubic-bezier(.25,.46,.45,.94);
+  transition:transform .28s cubic-bezier(.25,.46,.45,.94),
+             visibility 0s linear .28s;
   will-change:transform;
   -webkit-backface-visibility:hidden;
-  backface-visibility:hidden
+  backface-visibility:hidden;
+  visibility:hidden
 }
-.pg-panel.open{transform:translateX(0)}
+.pg-panel.open{
+  transform:translateX(0);
+  visibility:visible;
+  transition:transform .28s cubic-bezier(.25,.46,.45,.94),
+             visibility 0s linear 0s
+}
 /* sub panels: leave tab bar visible */
 .pg-sub{
   bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px))
@@ -339,9 +346,14 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
 @media(min-width:520px){
   #app{left:calc(50% - 240px);right:auto;width:480px}
   #tabBar{left:calc(50% - 240px);right:auto;width:480px}
-  .pg-panel{left:calc(50% - 240px);right:auto;width:480px}
-  .pg-panel{transform:translateX(100%)}
-  .pg-panel.open{transform:translateX(0)}
+  .pg-panel{
+    left:calc(50% - 240px);right:auto;width:480px;
+    visibility:hidden
+  }
+  .pg-panel.open{
+    transform:translateX(0);
+    visibility:visible
+  }
   .bso{left:calc(50% - 240px);right:auto;width:480px}
   .bsw{width:100%}
 }
