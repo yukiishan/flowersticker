@@ -1369,18 +1369,7 @@ function openMaEvEd(id){
   $('mev-s').value=ev?toInputDate(ev.startDate):'';
   $('mev-e').value=ev?toInputDate(ev.endDate):'';
   $('maEvDelB').style.display=ev?'block':'none';
-  // 新增時強制清空；編輯時讀取已連結相冊
-  var evAlbs=(!id||!ev)?[]:(Array.isArray(ev.albums)?ev.albums:[]);
-  var out='';
-  if(AL.length){
-    for(var i=0;i<AL.length;i++){
-      var a=AL[i];
-      out+='<div class="mc'+(evAlbs.indexOf(a.id)>=0?' on':'')+'" style="margin-bottom:7px" data-aid="'+a.id+'" onclick="this.classList.toggle(\'on\')"><div class="mcb">✓</div><span class="mcn">'+sf(a.name)+'</span></div>';
-    }
-  }else{
-    out='<div style="font-size:13px;color:var(--tx3)">尚無相冊，請新增相冊</div>';
-  }
-  $('albB').innerHTML=out;
+  renderAlbB(id||null);
   op('pp-maEvEd');
 }
 function renderAlbB(evId){
