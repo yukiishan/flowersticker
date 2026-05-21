@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="花朝宴">
 <meta name="theme-color" content="#9A7A78">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌸</text></svg>">
 <title>花朝宴貼圖管理</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -612,6 +613,17 @@ function pad2(n){return n<10?'0'+n:String(n);}
 function fmtDateTime(d){
   return d.getFullYear()+'/'+pad2(d.getMonth()+1)+'/'+pad2(d.getDate())+' '+pad2(d.getHours())+':'+pad2(d.getMinutes());
 }
+// 確保日期值為 "yyyy-MM-dd" 格式（input[type=date] 需要）
+function safeDate(v){
+  if(!v)return'';
+  var s=String(v).trim();
+  // 已經是 yyyy-MM-dd 格式
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s;
+  // 嘗試解析其他格式
+  var d=new Date(s);
+  if(isNaN(d.getTime()))return'';
+  return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());
+}
 var API='https://script.google.com/macros/s/AKfycbzJSm_7k5RCI__5zehjIv7swtbxioee_4BGfjzD7QV7Ig0yQq_BBJrIc8QZpVrni5jO/exec';
 
 // ── State ──
@@ -671,7 +683,7 @@ function apiCall(action,payload,cb){
   var xhr=new XMLHttpRequest();
   xhr.open('GET',url,true);
   xhr.timeout=30000;
-  xhr.setRequestHeader('Accept','application/json');
+  xhr.withCredentials=false;
   xhr.onload=function(){
     if(xhr.status===200){
       try{
@@ -739,11 +751,11 @@ function manualSync(){
 function startApp(){
   loadCache();
   renderAll();
-  showLoading(false); // Show app immediately with cached data
-  fetchAll(function(ok){
-    if(ok)renderAll();
-    // Don't re-show loading - app is already visible
-  });
+  showLoading(false);
+  // Background sync - don't block UI
+  setTimeout(function(){
+    fetchAll(function(ok){if(ok)renderAll();});
+  },100);
 }
 function renderAll(){rEv();rGr();renderCal();updateSetCounts();refreshAllSelects();}
 
@@ -783,8 +795,8 @@ function openEvEdit(id){
   var ev=id?E.filter(function(e){return e.id===id;})[0]:null;
   $('evEditTitle').textContent=ev?'編輯活動':'新增活動';
   $('ev-name').value=ev?ev.name:'';
-  $('ev-start').value=ev?ev.startDate:'';
-  $('ev-end').value=ev?ev.endDate:'';
+  $('ev-start').value=ev?safeDate(ev.startDate):'';
+  $('ev-end').value=ev?safeDate(ev.endDate):'';
   $('evDelBtn').style.display=ev?'block':'none';
   openPanel('pg-evEdit');
 }
@@ -956,7 +968,7 @@ function openGrEdit(id){
   $('grDelBtn').style.display=g?'block':'none';
   $('gr-ev').value=g?g.eventId:'';
   $('gr-mb').value=g?g.memberName:'';
-  $('gr-date').value=g?g.gradDate:todayStr();
+  $('gr-date').value=g?safeDate(g.gradDate):todayStr();
   onGrEvChange();openPanel('pg-grEdit');
 }
 function onGrEvChange(){
@@ -969,12 +981,17 @@ function saveGrEdit(){
   var eid=$('gr-ev').value,mv=$('gr-mb').value,date=$('gr-date').value;
   if(!eid||!mv){showToast('請選擇活動和成員');return;}
   var m=MB.filter(function(mb){return mb.name===mv;})[0];
-  var p={id:editGrId||undefined,eventId:eid,memberId:m?m.id:'',memberName:m?m.name:mv,gradDate:date};
+  var payload={eventId:eid,memberId:m?m.id:'',memberName:m?m.name:mv,gradDate:date};
+  if(editGrId)payload.id=editGrId;
   showLoading(true);
-  apiCall('saveGrad',p,function(err,r){
+  apiCall('saveGrad',payload,function(err,r){
     if(err){showLoading(false);showToast('❌ '+err.message);return;}
-    if(!editGrId)GR.push(Object.assign({id:r.id},p));
-    else{var g=GR.filter(function(g){return g.id===editGrId;})[0];if(g)Object.assign(g,p);}
+    if(!editGrId){
+      GR.push({id:r.id,eventId:payload.eventId,memberId:payload.memberId,memberName:payload.memberName,gradDate:payload.gradDate});
+    }else{
+      var g=GR.filter(function(g){return g.id===editGrId;})[0];
+      if(g){g.eventId=payload.eventId;g.memberId=payload.memberId;g.memberName=payload.memberName;g.gradDate=payload.gradDate;}
+    }
     saveCache();closePanel('pg-grEdit');rGr();showLoading(false);showToast('✓ 畢業紀錄已儲存');
   });
 }
@@ -1053,7 +1070,7 @@ function openTrEdit(id,prefill){
   $('trEditTitle').textContent=t?'編輯交換':'新增交換';
   $('trDelBtn').style.display=t?'block':'none';
   $('tr-ev').value=t?t.eventId:'';
-  $('tr-date').value=t?t.tradeDate:(prefill||todayStr());
+  $('tr-date').value=t?safeDate(t.tradeDate):(prefill||todayStr());
   $('tr-ma').value=t?t.memberA:'';
   $('tr-mb').value=t?t.memberB:'';
   $('tr-note').value=t?t.note:'';
@@ -1093,14 +1110,25 @@ function saveTrEdit(){
   if(!date||!ma||!mb){showToast('請填寫日期和雙方成員');return;}
   if(ma===mb){showToast('成員 A 和 B 不能相同');return;}
   var selA=$('tr-ia-sel'),selB=$('tr-ib-sel');
-  var itemA=$('tr-ia-txt').value.trim()||(selA.value&&selA.selectedIndex>=0?selA.options[selA.selectedIndex].text:'');
-  var itemB=$('tr-ib-txt').value.trim()||(selB.value&&selB.selectedIndex>=0?selB.options[selB.selectedIndex].text:'');
-  var p={id:editTrId||undefined,eventId:$('tr-ev').value,tradeDate:date,memberA:ma,itemA:itemA,memberB:mb,itemB:itemB,note:$('tr-note').value};
+  var txtA=$('tr-ia-txt').value.trim();
+  var txtB=$('tr-ib-txt').value.trim();
+  var itemA=txtA||(selA.value&&selA.selectedIndex>0?selA.options[selA.selectedIndex].text:'');
+  var itemB=txtB||(selB.value&&selB.selectedIndex>0?selB.options[selB.selectedIndex].text:'');
+  var payload={eventId:$('tr-ev').value,tradeDate:date,memberA:ma,itemA:itemA,memberB:mb,itemB:itemB,note:$('tr-note').value||''};
+  if(editTrId)payload.id=editTrId;
   showLoading(true);
-  apiCall('saveTrade',p,function(err,r){
+  apiCall('saveTrade',payload,function(err,r){
     if(err){showLoading(false);showToast('❌ '+err.message);return;}
-    if(!editTrId)TR.push(Object.assign({id:r.id},p));
-    else{var t=TR.filter(function(t){return t.id===editTrId;})[0];if(t)Object.assign(t,p);}
+    if(!editTrId){
+      TR.push({id:r.id,eventId:payload.eventId,tradeDate:payload.tradeDate,
+        memberA:payload.memberA,itemA:payload.itemA,
+        memberB:payload.memberB,itemB:payload.itemB,note:payload.note});
+    }else{
+      var t=TR.filter(function(t){return t.id===editTrId;})[0];
+      if(t){t.eventId=payload.eventId;t.tradeDate=payload.tradeDate;
+        t.memberA=payload.memberA;t.itemA=payload.itemA;
+        t.memberB=payload.memberB;t.itemB=payload.itemB;t.note=payload.note;}
+    }
     saveCache();closePanel('pg-trEdit');renderCal();showLoading(false);showToast('✓ 交換紀錄已儲存');
   });
 }
@@ -1190,8 +1218,8 @@ function openMaEvEdit(id){
   var ev=id?E.filter(function(e){return e.id===id;})[0]:null;
   $('maEvEditTitle').textContent=ev?'編輯活動':'新增活動';
   $('mev-name').value=ev?ev.name:'';
-  $('mev-start').value=ev?ev.startDate:'';
-  $('mev-end').value=ev?ev.endDate:'';
+  $('mev-start').value=ev?safeDate(ev.startDate):'';
+  $('mev-end').value=ev?safeDate(ev.endDate):'';
   $('maEvDelBtn').style.display=ev?'block':'none';
   var evAlbs=ev&&Array.isArray(ev.albums)?ev.albums:[];
   var out='';
@@ -1205,7 +1233,8 @@ function saveMaEvEdit(){
   var name=$('mev-name').value.trim();if(!name){showToast('請輸入活動名稱');return;}
   var checked=document.querySelectorAll('#albBind .member-chk.on');
   var albums=[];for(var i=0;i<checked.length;i++)if(checked[i].dataset.aid)albums.push(checked[i].dataset.aid);
-  var p={id:editMaEvId||undefined,name:name,startDate:$('mev-start').value,endDate:$('mev-end').value,albums:albums};
+  var p={name:name,startDate:$('mev-start').value,endDate:$('mev-end').value,albums:albums};
+  if(editMaEvId)p.id=editMaEvId;
   showLoading(true);
   apiCall('saveEvent',p,function(err,r){
     if(err){showLoading(false);showToast('❌ '+err.message);return;}
