@@ -434,7 +434,7 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
           <div class="setg">維護管理</div>
           <div class="setcd">
             <div class="si" onclick="openMaint('mb')"><div class="sic" style="background:var(--accent-bg)"><svg viewBox="0 0 24 24" stroke="var(--accent)"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><path d="M16 3.13a4 4 0 010 7.75M21 21v-2a4 4 0 00-3-3.87"/></svg></div><div class="sit"><div class="sti">成員維護</div><div class="ssu" id="sub-mb">管理成員名單</div></div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round"><polyline points="9,18 15,12 9,6"/></svg></div>
-            <div class="si" onclick="openMaint('al')"><div class="sic" style="background:var(--accent-bg)"><svg viewBox="0 0 24 24" stroke="var(--accent)"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div><div class="sit"><div class="sti">相冊維護</div><div class="ssu" id="sub-al">管理相冊名稱</div></div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round"><polyline points="9,18 15,12 9,6"/></svg></div>
+
             <div class="si" onclick="openMaint('ev')"><div class="sic" style="background:var(--accent-bg)"><svg viewBox="0 0 24 24" stroke="var(--accent)"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><div class="sit"><div class="sti">活動維護</div><div class="ssu" id="sub-ev">活動名稱、時間、相冊設定</div></div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round"><polyline points="9,18 15,12 9,6"/></svg></div>
           </div>
           <div class="setg">資料</div>
@@ -565,14 +565,6 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
   <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:13px" id="mbL"></div>
 </div>
 
-<!-- Album Maint -->
-<div class="pg-panel pg-sub" id="pp-maAl">
-  <div class="pg-sub-bar"></div>
-  <div class="dn"><button class="dbk" onclick="cp('pp-maAl')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button><h2>相冊維護</h2></div>
-  <div class="mbar"><input class="mii" id="nAl" placeholder="輸入相冊名稱…" onkeydown="if(event.key==='Enter')addAl()"><button class="mab" onclick="addAl()">＋ 新增</button></div>
-  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:13px" id="alL"></div>
-</div>
-
 <!-- Event Maint List -->
 <div class="pg-panel pg-sub" id="pp-maEvL">
   <div class="pg-sub-bar"></div>
@@ -590,7 +582,16 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
       <div class="fr"><div class="fl">活動名稱</div><div class="fb"><input id="mev-nm" class="fi" placeholder="活動名稱"></div></div>
       <div class="fr2"><div><div class="fl">開始日期</div><div class="fb"><input id="mev-s" class="fi" type="date"></div></div><div><div class="fl">結束日期</div><div class="fb"><input id="mev-e" class="fi" type="date"></div></div></div>
     </div>
-    <div class="fs"><div class="fst">連結相冊</div><div style="padding:9px 13px" id="albB"></div></div>
+    <div class="fs">
+      <div class="fst">相冊管理</div>
+      <div style="padding:9px 13px">
+        <div style="display:flex;gap:7px;margin-bottom:9px">
+          <input id="newAlbInEv" class="fi" placeholder="新相冊名稱…" style="flex:1;background:var(--sf2);border-radius:9px;padding:8px 10px;font-size:14px" onkeydown="if(event.key==='Enter')addAlbumInEv()">
+          <button onclick="addAlbumInEv()" style="padding:8px 13px;border-radius:9px;background:var(--accent);color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">＋ 新增</button>
+        </div>
+        <div id="albB"></div>
+      </div>
+    </div>
     <button class="dbd" id="maEvDelB" style="display:none" onclick="delMaEv()">刪除此活動</button>
   </div>
 </div>
@@ -1218,21 +1219,28 @@ function saveTr(){
   var itemB=getItName('tr-ibs','tr-ibt');
   var cntA=Number($('tr-ca').value)||1;
   var cntB=Number($('tr-cb').value)||1;
-  // 驗證：同一天 memberA + memberB 的加總次數不超過 3
-  var eid=$('tr-ev').value;
-  var sameDayTrades=TR.filter(function(x){
-    if(eTrId&&x.id===eTrId) return false; // 排除自己（編輯時）
-    if(x.tradeDate!==dt) return false;
-    return(x.memberA===ma||x.memberB===ma||x.memberA===mb||x.memberB===mb);
+  // 驗證：計算蕾當天不論在成員A或B位置的次數加總
+  // 例：5/22 蕾在A記錄1次 + 在B記錄2次 = 共3次（可存）
+  //     再輸入第4次（不論在A或B）→ 總計4次 → 擋住
+  var allSameDay=TR.filter(function(x){
+    if(eTrId&&x.id===eTrId) return false; // 編輯時排除自己
+    return x.tradeDate===dt;
   });
-  var existCntA=0,existCntB=0;
-  for(var i=0;i<sameDayTrades.length;i++){
-    var x=sameDayTrades[i];
-    if(x.memberA===ma||x.memberB===ma) existCntA+=(Number(x.cntA)||1)+(Number(x.cntB)||1);
-    if(x.memberA===mb||x.memberB===mb) existCntB+=(Number(x.cntA)||1)+(Number(x.cntB)||1);
+  // 分別計算 ma 和 mb 當天累計次數
+  function personTotal(name){
+    var total=0;
+    for(var i=0;i<allSameDay.length;i++){
+      var x=allSameDay[i];
+      if(x.memberA===name) total+=Number(x.cntA)||1;
+      if(x.memberB===name) total+=Number(x.cntB)||1;
+    }
+    return total;
   }
-  if(existCntA+cntA+cntB>3){toast('⚠ '+ma+' 今日交換次數（含本次）已超過 3 次！');return;}
-  if(existCntB+cntA+cntB>3){toast('⚠ '+mb+' 今日交換次數（含本次）已超過 3 次！');return;}
+  var totalA=personTotal(ma)+cntA; // ma 當天已有次數 + 本次 cntA
+  var totalB=personTotal(mb)+cntB; // mb 當天已有次數 + 本次 cntB
+  if(totalA>3){toast('⚠ '+ma+' 今日交換次數合計將達 '+totalA+' 次，超過上限 3 次！');return;}
+  if(totalB>3){toast('⚠ '+mb+' 今日交換次數合計將達 '+totalB+' 次，超過上限 3 次！');return;}
+  var eid=$('tr-ev').value;
   var pay={eventId:eid,tradeDate:dt,memberA:ma,itemA:itemA,cntA:cntA,memberB:mb,itemB:itemB,cntB:cntB,note:$('tr-nt').value||''};
   if(eTrId) pay.id=eTrId;
   ld(true);
@@ -1266,14 +1274,11 @@ function delTr(){
 // ══ PAGE 4: SETTINGS ══
 function updSC(){
   $('sub-mb').textContent='目前 '+MB.length+' 位成員';
-  $('sub-al').textContent='目前 '+AL.length+' 個相冊';
-  $('sub-ev').textContent='目前 '+E.length+' 個活動';
+  $('sub-ev').textContent='目前 '+E.length+' 個活動（'+AL.length+' 個相冊）';
 }
 function openMaint(t){
-  if(t==='mb') rMbL();
-  else if(t==='al') rAlL();
-  else if(t==='ev') rMaEvL();
-  op({mb:'pp-maMb',al:'pp-maAl',ev:'pp-maEvL'}[t]);
+  if(t==='mb'){rMbL();op('pp-maMb');}
+  else if(t==='ev'){rMaEvL();op('pp-maEvL');}
 }
 function rMbL(){
   var el=$('mbL');
@@ -1357,10 +1362,68 @@ function openMaEvEd(id){
       out+='<div class="mc'+(evAlbs.indexOf(a.id)>=0?' on':'')+'" style="margin-bottom:7px" data-aid="'+a.id+'" onclick="this.classList.toggle(\'on\')"><div class="mcb">✓</div><span class="mcn">'+sf(a.name)+'</span></div>';
     }
   }else{
-    out='<div style="font-size:13px;color:var(--tx3)">尚無相冊，請先到「相冊維護」新增</div>';
+    out='<div style="font-size:13px;color:var(--tx3)">尚無相冊，請新增相冊</div>';
   }
   $('albB').innerHTML=out;
   op('pp-maEvEd');
+}
+function renderAlbB(evAlbs){
+  var el=$('albB');
+  el.innerHTML='';
+  if(!AL.length){
+    el.innerHTML='<div style="font-size:13px;color:var(--tx3)">尚無相冊，請新增相冊</div>';
+    return;
+  }
+  for(var i=0;i<AL.length;i++){
+    var a=AL[i];
+    var isOn=evAlbs.indexOf(a.id)>=0;
+    var row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:7px;margin-bottom:7px';
+    var mc=document.createElement('div');
+    mc.className=isOn?'mc on':'mc';
+    mc.style.flex='1';
+    mc.setAttribute('data-aid',a.id);
+    mc.innerHTML='<div class="mcb">&#x2713;</div><span class="mcn">'+sf(a.name)+'</span>';
+    mc.addEventListener('click',function(){this.classList.toggle('on');});
+    var delBtn=document.createElement('button');
+    delBtn.textContent='🗑';
+    delBtn.style.cssText='background:var(--red-bg);color:var(--red-tx);border:1px solid var(--red);border-radius:7px;padding:4px 9px;font-size:12px;cursor:pointer;font-family:inherit;flex-shrink:0';
+    (function(aid){
+      delBtn.addEventListener('click',function(){delAlbumGlobal(aid);});
+    })(a.id);
+    row.appendChild(mc);row.appendChild(delBtn);
+    el.appendChild(row);
+  }
+}
+function togAlb(el){el.classList.toggle('on');}
+function addAlbumInEv(){
+  var inp=$('newAlbInEv'),nm=inp.value.replace(/^\s+|\s+$/g,'');
+  if(!nm) return;
+  ld(true);
+  apiXHR('saveAlbum',{name:nm},function(err,r){
+    ld(false);
+    if(err){toast('❌ '+err.message);return;}
+    AL.push({id:r.id,name:nm});
+    saveCache();inp.value='';
+    // 取得目前已勾選的 albums，重新渲染（保留勾選狀態）
+    var checked=document.querySelectorAll('#albB .mc.on');
+    var cur=[];for(var i=0;i<checked.length;i++)if(checked[i].getAttribute('data-aid'))cur.push(checked[i].getAttribute('data-aid'));
+    renderAlbB(cur);
+    updSC();refreshSels();toast('✓ 相冊已新增');
+  });
+}
+function delAlbumGlobal(id){
+  if(!confirm('確定刪除此相冊？')) return;
+  var orig=AL.slice();AL=AL.filter(function(a){return a.id!==id;});ld(true);
+  apiXHR('deleteAlbum',{id:id},function(err){
+    ld(false);
+    if(err){AL=orig;toast('❌ '+err.message);return;}
+    saveCache();
+    var checked=document.querySelectorAll('#albB .mc.on');
+    var cur=[];for(var i=0;i<checked.length;i++){var aid=checked[i].getAttribute('data-aid');if(aid&&aid!==id)cur.push(aid);}
+    renderAlbB(cur);
+    updSC();refreshSels();toast('✓ 相冊已刪除');
+  });
 }
 function saveMaEv(){
   var nm=$('mev-nm').value.replace(/^\s+|\s+$/g,'');
