@@ -376,6 +376,9 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
         </div>
         <div class="srow"><div class="sdot" id="sdot"></div><span id="slbl">就緒</span><span id="stm" style="margin-left:auto;font-size:10px"></span></div>
         <div class="fps" id="evP"></div>
+        <div style="padding:6px 13px;background:var(--sf);border-bottom:1px solid var(--bd)">
+          <input id="evSearch" class="fi" placeholder="🔍 搜尋活動…" oninput="rEv()" style="background:var(--sf2);border-radius:9px;padding:8px 11px;width:100%;font-size:14px">
+        </div>
       </div>
       <div class="ps"><div class="cl" id="evL"></div></div>
     </div>
@@ -456,7 +459,8 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
 
 <!-- PANELS -->
 <!-- Event Edit -->
-<div class="pg-panel" id="pp-evEd">
+<div class="pg-panel pg-sub" id="pp-evEd">
+  <div class="pg-sub-bar"></div>
   <div class="dn"><button class="dbk" onclick="cp('pp-evEd')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button><h2 id="evEdT">新增活動</h2><button class="dsav" onclick="saveEv()">儲存</button></div>
   <div class="dsc">
     <div class="fs">
@@ -469,15 +473,20 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
 </div>
 
 <!-- Event Detail -->
-<div class="pg-panel" id="pp-evDt">
+<div class="pg-panel pg-sub" id="pp-evDt">
+  <div class="pg-sub-bar"></div>
   <div class="dn"><button class="dbk" onclick="cp('pp-evDt')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button><h2 id="dtTit">物品列表</h2><button class="hb" style="background:var(--accent-dk);padding:5px 10px" onclick="openItEdit(null)">＋</button></div>
   <div style="background:var(--sf);border-bottom:1px solid var(--bd);padding:5px 13px;flex-shrink:0;font-size:11px;color:var(--tx3)" id="dtInf"></div>
   <div class="ctabs"><div class="ctab on" data-c="all" onclick="setCat('all')">全部</div><div class="ctab" data-c="owned" onclick="setCat('owned')">✅ 已持有</div><div class="ctab" data-c="unowned" onclick="setCat('unowned')">❌ 未持有</div><div class="ctab" data-c="extra" onclick="setCat('extra')">⭐ 多餘</div></div>
+  <div style="padding:6px 13px;background:var(--sf);border-bottom:1px solid var(--bd);flex-shrink:0">
+    <input id="itSearch" class="fi" placeholder="🔍 搜尋物品…" oninput="rItems()" style="background:var(--sf2);border-radius:9px;padding:8px 11px;width:100%;font-size:14px">
+  </div>
   <div class="ps" id="itL"></div>
 </div>
 
 <!-- Item Edit -->
-<div class="pg-panel" id="pp-itEd">
+<div class="pg-panel pg-sub" id="pp-itEd">
+  <div class="pg-sub-bar"></div>
   <div class="dn"><button class="dbk" onclick="cp('pp-itEd')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button><h2 id="itEdT">新增物品</h2><button class="dsav" onclick="saveIt()">儲存</button></div>
   <div class="dsc">
     <div class="fs">
@@ -494,7 +503,8 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
 </div>
 
 <!-- Grad Edit -->
-<div class="pg-panel" id="pp-grEd">
+<div class="pg-panel pg-sub" id="pp-grEd">
+  <div class="pg-sub-bar"></div>
   <div class="dn"><button class="dbk" onclick="cp('pp-grEd')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button><h2 id="grEdT">新增畢業紀錄</h2><button class="dsav" onclick="saveGr()">儲存</button></div>
   <div class="dsc">
     <div class="fs">
@@ -509,7 +519,8 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
 </div>
 
 <!-- Trade Edit -->
-<div class="pg-panel" id="pp-trEd">
+<div class="pg-panel pg-sub" id="pp-trEd">
+  <div class="pg-sub-bar"></div>
   <div class="dn"><button class="dbk" onclick="cp('pp-trEd')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button><h2 id="trEdT">新增交換紀錄</h2><button class="dsav" onclick="saveTr()">儲存</button></div>
   <div class="dsc">
     <div class="fs">
@@ -527,6 +538,7 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
           <input id="tr-iat" class="fi" placeholder="手動輸入物品名稱">
         </div>
       </div>
+      <div class="fr"><div class="fl">次數 A</div><div class="fb"><select id="tr-ca" class="fse"><option value="1">1 次</option><option value="2">2 次</option><option value="3">3 次</option></select></div></div>
     </div>
     <div class="fs">
       <div class="fst">成員 B</div>
@@ -538,6 +550,7 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
           <input id="tr-ibt" class="fi" placeholder="手動輸入物品名稱">
         </div>
       </div>
+      <div class="fr"><div class="fl">次數 B</div><div class="fb"><select id="tr-cb" class="fse"><option value="1">1 次</option><option value="2">2 次</option><option value="3">3 次</option></select></div></div>
     </div>
     <div class="fs"><div class="fst">備註</div><div class="fr"><div class="fb"><input id="tr-nt" class="fi" placeholder="選填備註…"></div></div></div>
     <button class="dbd" id="trDelB" style="display:none" onclick="delTr()">刪除此紀錄</button>
@@ -753,8 +766,8 @@ function fetchAll(cb){
       return {
         id:t.id, eventId:t.eventId,
         tradeDate:toInputDate(t.tradeDate),
-        memberA:t.memberA||'', itemA:t.itemA||'',
-        memberB:t.memberB||'', itemB:t.itemB||'',
+        memberA:t.memberA||'', itemA:t.itemA||'', cntA:Number(t.cntA)||1,
+        memberB:t.memberB||'', itemB:t.itemB||'', cntB:Number(t.cntB)||1,
         note:t.note||''
       };
     });
@@ -817,7 +830,11 @@ function rEv(){
   var h='<div class="pill'+(evF===null?' on':'')+'" onclick="setEF(null)">全部</div>';
   for(var i=0;i<E.length;i++) h+='<div class="pill'+(evF===E[i].id?' on':'')+'" onclick="setEF(\''+E[i].id+'\')">'+sf(E[i].name)+'</div>';
   p.innerHTML=h;
+  var searchQ='';
+  var evSrch=$('evSearch');
+  if(evSrch) searchQ=evSrch.value.replace(/^\s+|\s+$/g,'').toLowerCase();
   var shown=evF?E.filter(function(e){return e.id===evF;}):E;
+  if(searchQ) shown=shown.filter(function(e){return e.name.toLowerCase().indexOf(searchQ)>=0;});
   var el=$('evL');
   if(!shown.length){
     el.innerHTML='<div class="em"><svg viewBox="0 0 24 24"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg><p>尚無活動<br>點右上角「＋」建立</p></div>';
@@ -886,6 +903,7 @@ function delEv(){
 }
 function openEvDt(id){
   dtEvId=id;curCat='all';
+  var s=$('itSearch');if(s)s.value='';
   var ev=E.filter(function(e){return e.id===id;})[0];
   $('dtTit').textContent=ev?ev.name:'物品列表';
   $('dtInf').textContent=ev&&ev.startDate?(fmtDate(ev.startDate)+(ev.endDate?' → '+fmtDate(ev.endDate):'')):''; 
@@ -904,6 +922,11 @@ function rItems(){
   if(curCat==='owned') its=its.filter(function(x){return(x.owned||[]).length>0;});
   else if(curCat==='unowned') its=its.filter(function(x){return(x.owned||[]).length<MB.length;});
   else if(curCat==='extra') its=its.filter(function(x){return(x.extra||[]).length>0;});
+  var itSrch=$('itSearch');
+  if(itSrch&&itSrch.value.replace(/^\s+|\s+$/g,'')){
+    var q=itSrch.value.replace(/^\s+|\s+$/g,'').toLowerCase();
+    its=its.filter(function(x){return x.name.toLowerCase().indexOf(q)>=0;});
+  }
   var el=$('itL');
   if(!its.length){el.innerHTML='<div class="em"><svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h5l3 3v5h-8V8z"/></svg><p>此分類無物品</p></div>';return;}
   var out='';
@@ -1124,7 +1147,7 @@ function openCD(ds){
     var ev=E.filter(function(e){return e.id===t.eventId;})[0];
     html+='<div class="trc" onclick="rmBS();openTrEdit(\''+t.id+'\',null)">'
       +'<div style="font-size:10px;color:var(--tx3);margin-bottom:3px">'+(ev?sf(ev.name):'')+'</div>'
-      +'<div style="font-size:14px;font-weight:700;color:var(--tx)">'+sf(t.memberA)+' ⇄ '+sf(t.memberB)+'</div>'
+      +'<div style="font-size:14px;font-weight:700;color:var(--tx)">'+sf(t.memberA)+'('+((t.cntA)||1)+'次) ⇄ '+sf(t.memberB)+'('+((t.cntB)||1)+'次)</div>'
       +((t.itemA||t.itemB)?'<div style="font-size:11px;color:var(--tx2);margin-top:2px">'+sf(t.itemA||'')+(t.itemA&&t.itemB?' / ':'')+sf(t.itemB||'')+'</div>':'')
       +(t.note?'<div style="font-size:11px;color:var(--tx3);margin-top:2px">備：'+sf(t.note)+'</div>':'')
       +'</div>';
@@ -1150,6 +1173,8 @@ function openTrEdit(id,prefill){
   $('tr-ma').value=t?t.memberA:'';
   $('tr-mb').value=t?t.memberB:'';
   $('tr-nt').value=(t&&t.note)?t.note:'';
+  $('tr-ca').value=(t&&t.cntA)?String(t.cntA):'1';
+  $('tr-cb').value=(t&&t.cntB)?String(t.cntB):'1';
   onTrEv();
   if(t){
     // 填入物品 A/B（延遲等 select 渲染完）
@@ -1191,7 +1216,24 @@ function saveTr(){
   if(ma===mb){toast('成員 A 和 B 不能相同');return;}
   var itemA=getItName('tr-ias','tr-iat');
   var itemB=getItName('tr-ibs','tr-ibt');
-  var pay={eventId:$('tr-ev').value,tradeDate:dt,memberA:ma,itemA:itemA,memberB:mb,itemB:itemB,note:$('tr-nt').value||''};
+  var cntA=Number($('tr-ca').value)||1;
+  var cntB=Number($('tr-cb').value)||1;
+  // 驗證：同一天 memberA + memberB 的加總次數不超過 3
+  var eid=$('tr-ev').value;
+  var sameDayTrades=TR.filter(function(x){
+    if(eTrId&&x.id===eTrId) return false; // 排除自己（編輯時）
+    if(x.tradeDate!==dt) return false;
+    return(x.memberA===ma||x.memberB===ma||x.memberA===mb||x.memberB===mb);
+  });
+  var existCntA=0,existCntB=0;
+  for(var i=0;i<sameDayTrades.length;i++){
+    var x=sameDayTrades[i];
+    if(x.memberA===ma||x.memberB===ma) existCntA+=(Number(x.cntA)||1)+(Number(x.cntB)||1);
+    if(x.memberA===mb||x.memberB===mb) existCntB+=(Number(x.cntA)||1)+(Number(x.cntB)||1);
+  }
+  if(existCntA+cntA+cntB>3){toast('⚠ '+ma+' 今日交換次數（含本次）已超過 3 次！');return;}
+  if(existCntB+cntA+cntB>3){toast('⚠ '+mb+' 今日交換次數（含本次）已超過 3 次！');return;}
+  var pay={eventId:eid,tradeDate:dt,memberA:ma,itemA:itemA,cntA:cntA,memberB:mb,itemB:itemB,cntB:cntB,note:$('tr-nt').value||''};
   if(eTrId) pay.id=eTrId;
   ld(true);
   apiXHR('saveTrade',pay,function(err,r){
@@ -1199,13 +1241,13 @@ function saveTr(){
     if(err){toast('❌ '+err.message);return;}
     if(!eTrId){
       TR.push({id:r.id,eventId:pay.eventId,tradeDate:pay.tradeDate,
-        memberA:pay.memberA,itemA:pay.itemA,
-        memberB:pay.memberB,itemB:pay.itemB,note:pay.note});
+        memberA:pay.memberA,itemA:pay.itemA,cntA:pay.cntA,
+        memberB:pay.memberB,itemB:pay.itemB,cntB:pay.cntB,note:pay.note});
     }else{
       var t=TR.filter(function(x){return x.id===eTrId;})[0];
       if(t){t.eventId=pay.eventId;t.tradeDate=pay.tradeDate;
-        t.memberA=pay.memberA;t.itemA=pay.itemA;
-        t.memberB=pay.memberB;t.itemB=pay.itemB;t.note=pay.note;}
+        t.memberA=pay.memberA;t.itemA=pay.itemA;t.cntA=pay.cntA;
+        t.memberB=pay.memberB;t.itemB=pay.itemB;t.cntB=pay.cntB;t.note=pay.note;}
     }
     saveCache();cp('pp-trEd');renderCal();toast('✓ 交換紀錄已儲存');
   });
@@ -1306,8 +1348,8 @@ function openMaEvEd(id){
   $('mev-s').value=ev?toInputDate(ev.startDate):'';
   $('mev-e').value=ev?toInputDate(ev.endDate):'';
   $('maEvDelB').style.display=ev?'block':'none';
-  // 顯示所有相冊供選擇
-  var evAlbs=(ev&&Array.isArray(ev.albums))?ev.albums:[];
+  // 新增時強制清空；編輯時讀取已連結相冊
+  var evAlbs=(!id||!ev)?[]:(Array.isArray(ev.albums)?ev.albums:[]);
   var out='';
   if(AL.length){
     for(var i=0;i<AL.length;i++){
