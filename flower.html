@@ -1095,10 +1095,11 @@ function saveGr(){
 }
 function delGr(){
   if(!confirm('確定刪除？')) return;
+  if(!eGrId){toast('❌ 找不到記錄 ID');return;}
   ld(true);
   apiXHR('deleteGrad',{id:eGrId},function(err){
     ld(false);
-    if(err){toast('❌ '+err.message);return;}
+    if(err){toast('❌ '+err.message,5000);return;}
     GR=GR.filter(function(g){return g.id!==eGrId;});
     saveCache();cp('pp-grEd');rGr();toast('✓ 已刪除');
   });
