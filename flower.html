@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="花朝宴">
 <meta name="theme-color" content="#9A7A78">
@@ -23,16 +24,18 @@
   --safe-bot:env(safe-area-inset-bottom,0px);
 }
 html{background:#9A7A78}
-body{margin:0;padding:0;background:#9A7A78;overflow:hidden;font-family:-apple-system,'Noto Sans TC','PingFang TC',sans-serif;-webkit-font-smoothing:antialiased}
+body{margin:0;padding:0;background:#9A7A78;font-family:-apple-system,'Noto Sans TC','PingFang TC',sans-serif;-webkit-font-smoothing:antialiased}
 
 /* ── APP SHELL ── */
 #app{
   display:flex;flex-direction:column;
   position:fixed;top:0;left:0;right:0;bottom:0;
-  background:var(--sf);overflow:hidden
+  background:var(--sf);
+  /* iOS Safari fix: avoid overflow:hidden on position:fixed */
+  -webkit-overflow-scrolling:touch
 }
 #statusBar{height:env(safe-area-inset-top,0px);background:var(--accent);flex-shrink:0}
-#pageContainer{flex:1;overflow:hidden;position:relative}
+#pageContainer{flex:1;overflow:hidden;position:relative;-webkit-overflow-scrolling:touch}
 .page{position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;background:var(--bg);display:none;flex-direction:column}
 .page.active{display:flex}
 .page-sticky-header{flex-shrink:0;background:var(--sf);border-bottom:1px solid var(--bd);z-index:10}
@@ -137,10 +140,11 @@ body{margin:0;padding:0;background:#9A7A78;overflow:hidden;font-family:-apple-sy
 .form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:10px 15px;border-bottom:1px solid var(--bd)}
 .form-row-2:last-child{border-bottom:none}
 .form-label{font-size:11px;font-weight:600;color:var(--tx2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
-.form-input{font-size:16px;border:none;background:none;color:var(--tx);font-family:inherit;width:100%;outline:none;padding:2px 0;-webkit-appearance:none}
+.form-input{font-size:16px;border:none;background:none;color:var(--tx);font-family:inherit;width:100%;outline:none;padding:2px 0;-webkit-appearance:none;appearance:none;border-radius:0}
 .form-input::placeholder{color:var(--tx3)}
-.form-select{font-size:15px;border:none;background:none;color:var(--tx);font-family:inherit;width:100%;outline:none;-webkit-appearance:none;padding:2px 0}
+.form-select{font-size:15px;border:none;background:none;color:var(--tx);font-family:inherit;width:100%;outline:none;-webkit-appearance:none;appearance:none;padding:2px 0}
 .form-input-box{background:var(--sf2);border-radius:10px;padding:10px 12px;margin-top:2px}
+.form-input-box select,.form-input-box input{background:transparent}
 
 /* ── MEMBER CHECKBOXES ── */
 .member-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
@@ -627,7 +631,7 @@ function setSyncState(s){
   var d=$('syncDot'),l=$('syncLabel'),t=$('syncTime');
   d.className='sync-dot'+(s==='syncing'?' syncing':s==='error'?' error':'');
   l.textContent=s==='syncing'?'同步中…':s==='error'?'同步失敗':'已同步';
-  if(s==='ok'&&t)t.textContent=new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
+  if(s==='ok'&&t)var now=new Date();var yy=now.getFullYear();var mm=String(now.getMonth()+1).padStart(2,'0');var dd=String(now.getDate()).padStart(2,'0');var hh=String(now.getHours()).padStart(2,'0');var mi=String(now.getMinutes()).padStart(2,'0');t.textContent=yy+'/'+mm+'/'+dd+' '+hh+':'+mi;
 }
 function parseArr(v){
   if(Array.isArray(v))return v;
@@ -662,16 +666,19 @@ function apiCall(action,payload,cb){
   var url=API+'?action='+encodeURIComponent(action)+'&p='+p+'&_='+Date.now();
   var xhr=new XMLHttpRequest();
   xhr.open('GET',url,true);
+  xhr.timeout=30000;
+  xhr.setRequestHeader('Accept','application/json');
   xhr.onload=function(){
     if(xhr.status===200){
       try{
         var j=JSON.parse(xhr.responseText);
         if(j.ok)cb(null,j.data);
         else cb(new Error(j.error||action+' failed'));
-      }catch(e){cb(new Error('Parse error'));}
+      }catch(e){cb(new Error('Response parse error: '+xhr.responseText.slice(0,100)));}
     }else{cb(new Error('HTTP '+xhr.status));}
   };
-  xhr.onerror=function(){cb(new Error('Network error'));};
+  xhr.onerror=function(){cb(new Error('網路錯誤，請檢查連線'));};
+  xhr.ontimeout=function(){cb(new Error('請求逾時，請重試'));};
   xhr.send();
 }
 
@@ -699,12 +706,26 @@ function saveCache(){
 function fetchAll(cb){
   setSyncState('syncing');
   apiCall('getAll',null,function(err,d){
-    if(err){setSyncState('error');showToast('⚠ 同步失敗：'+err.message,4000);if(cb)cb(false);return;}
+    if(err){
+      setSyncState('error');
+      showToast('⚠ 同步失敗：'+err.message,4000);
+      if(cb)cb(false);
+      return;
+    }
     E=d.events||[];
-    IT=(d.items||[]).map(function(it){return Object.assign({},it,{owned:parseArr(it.owned),extra:parseArr(it.extra)});});
+    IT=(d.items||[]).map(function(it){
+      return Object.assign({},it,{
+        owned:parseArr(it.owned),
+        extra:parseArr(it.extra)
+      });
+    });
     MB=(d.members&&d.members.length)?d.members:defMembers();
-    AL=d.albums||[];GR=d.grad||[];TR=d.trades||[];
-    saveCache();setSyncState('ok');if(cb)cb(true);
+    AL=d.albums||[];
+    GR=d.grad||[];
+    TR=d.trades||[];
+    saveCache();
+    setSyncState('ok');
+    if(cb)cb(true);
   });
 }
 function manualSync(){
@@ -712,8 +733,13 @@ function manualSync(){
   fetchAll(function(){showLoading(false);isSyncing=false;renderAll();showToast('✓ 資料已同步');});
 }
 function startApp(){
-  loadCache();renderAll();
-  fetchAll(function(ok){if(ok)renderAll();showLoading(false);});
+  loadCache();
+  renderAll();
+  showLoading(false); // Show app immediately with cached data
+  fetchAll(function(ok){
+    if(ok)renderAll();
+    // Don't re-show loading - app is already visible
+  });
 }
 function renderAll(){rEv();rGr();renderCal();updateSetCounts();refreshAllSelects();}
 
@@ -760,12 +786,17 @@ function openEvEdit(id){
 }
 function saveEvEdit(){
   var name=$('ev-name').value.trim();if(!name){showToast('請輸入活動名稱');return;}
-  var p={id:editEvId||undefined,name:name,startDate:$('ev-start').value,endDate:$('ev-end').value};
+  var payload={name:name,startDate:$('ev-start').value,endDate:$('ev-end').value};
+  if(editEvId)payload.id=editEvId;
   showLoading(true);
-  apiCall('saveEvent',p,function(err,r){
+  apiCall('saveEvent',payload,function(err,r){
     if(err){showLoading(false);showToast('❌ '+err.message);return;}
-    if(!editEvId){E.push({id:r.id,name:p.name,startDate:p.startDate,endDate:p.endDate,albums:[]});}
-    else{var ev=E.filter(function(e){return e.id===editEvId;})[0];if(ev){ev.name=p.name;ev.startDate=p.startDate;ev.endDate=p.endDate;}}
+    if(!editEvId){
+      E.push({id:r.id,name:payload.name,startDate:payload.startDate,endDate:payload.endDate,albums:[]});
+    }else{
+      var ev=E.filter(function(e){return e.id===editEvId;})[0];
+      if(ev){ev.name=payload.name;ev.startDate=payload.startDate;ev.endDate=payload.endDate;}
+    }
     saveCache();closePanel('pg-evEdit');renderAll();showLoading(false);showToast('✓ 活動已儲存');
   });
 }
@@ -867,12 +898,17 @@ function saveItEdit(){
   var allNames=MB.map(function(m){return m.name;});
   var owned=allNames.filter(function(n){return!unownedSet[n];});
   var extra=Object.keys(extraSet);
-  var p={id:editItId||undefined,eventId:detEvId,name:name,albumId:$('it-album').value,stars:itStars||'',owned:owned,extra:extra};
+  var payload={eventId:detEvId,name:name,albumId:$('it-album').value,stars:itStars||'',owned:owned,extra:extra};
+  if(editItId)payload.id=editItId;
   showLoading(true);
-  apiCall('saveItem',p,function(err,r){
+  apiCall('saveItem',payload,function(err,r){
     if(err){showLoading(false);showToast('❌ '+err.message);return;}
-    if(!editItId){IT.push({id:r.id,eventId:p.eventId,name:p.name,albumId:p.albumId,stars:p.stars,owned:owned,extra:extra});}
-    else{var it=IT.filter(function(i){return i.id===editItId;})[0];if(it){it.name=p.name;it.albumId=p.albumId;it.stars=p.stars;it.owned=owned;it.extra=extra;}}
+    if(!editItId){
+      IT.push({id:r.id,eventId:payload.eventId,name:payload.name,albumId:payload.albumId,stars:payload.stars,owned:owned,extra:extra});
+    }else{
+      var it=IT.filter(function(i){return i.id===editItId;})[0];
+      if(it){it.name=payload.name;it.albumId=payload.albumId;it.stars=payload.stars;it.owned=owned;it.extra=extra;}
+    }
     saveCache();closePanel('pg-itEdit');rItems();rEv();showLoading(false);showToast('✓ 物品已儲存');
   });
 }
