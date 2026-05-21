@@ -526,11 +526,11 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
     <div class="fs">
       <div class="fst">基本資訊</div>
       <div class="fr"><div class="fl">活動</div><div class="fb"><select id="tr-ev" class="fse" onchange="onTrEv()"><option value="">-- 選擇活動 --</option></select></div></div>
-      <div class="fr"><div class="fl">交換日期</div><div class="fb"><input id="tr-dt" class="fi" type="date"></div></div>
+      <div class="fr"><div class="fl">交換日期</div><div class="fb"><input id="tr-dt" class="fi" type="date" onchange="autoFillCnt('tr-ma','tr-ca');autoFillCnt('tr-mb','tr-cb')"></div></div>
     </div>
     <div class="fs">
       <div class="fst">成員 A</div>
-      <div class="fr"><div class="fl">成員</div><div class="fb"><select id="tr-ma" class="fse"><option value="">-- 選擇 --</option></select></div></div>
+      <div class="fr"><div class="fl">成員</div><div class="fb"><select id="tr-ma" class="fse" onchange="autoFillCnt('tr-ma','tr-ca')"><option value="">-- 選擇 --</option></select></div></div>
       <div class="fr"><div class="fl">交換物品 A</div>
         <div class="combo">
           <select id="tr-ias" class="fse" onchange="onIAS()"><option value="">-- 從清單選 --</option></select>
@@ -538,11 +538,11 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
           <input id="tr-iat" class="fi" placeholder="手動輸入物品名稱">
         </div>
       </div>
-      <div class="fr"><div class="fl">次數 A</div><div class="fb"><select id="tr-ca" class="fse"><option value="1">1 次</option><option value="2">2 次</option><option value="3">3 次</option></select></div></div>
+      <div class="fr"><div class="fl">第幾次 A</div><div class="fb"><select id="tr-ca" class="fse"><option value="1">第 1 次</option><option value="2">第 2 次</option><option value="3">第 3 次</option></select></div></div>
     </div>
     <div class="fs">
       <div class="fst">成員 B</div>
-      <div class="fr"><div class="fl">成員</div><div class="fb"><select id="tr-mb" class="fse"><option value="">-- 選擇 --</option></select></div></div>
+      <div class="fr"><div class="fl">成員</div><div class="fb"><select id="tr-mb" class="fse" onchange="autoFillCnt('tr-mb','tr-cb')"><option value="">-- 選擇 --</option></select></div></div>
       <div class="fr"><div class="fl">交換物品 B</div>
         <div class="combo">
           <select id="tr-ibs" class="fse" onchange="onIBS()"><option value="">-- 從清單選 --</option></select>
@@ -550,7 +550,7 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
           <input id="tr-ibt" class="fi" placeholder="手動輸入物品名稱">
         </div>
       </div>
-      <div class="fr"><div class="fl">次數 B</div><div class="fb"><select id="tr-cb" class="fse"><option value="1">1 次</option><option value="2">2 次</option><option value="3">3 次</option></select></div></div>
+      <div class="fr"><div class="fl">第幾次 B</div><div class="fb"><select id="tr-cb" class="fse"><option value="1">第 1 次</option><option value="2">第 2 次</option><option value="3">第 3 次</option></select></div></div>
     </div>
     <div class="fs"><div class="fst">備註</div><div class="fr"><div class="fb"><input id="tr-nt" class="fi" placeholder="選填備註…"></div></div></div>
     <button class="dbd" id="trDelB" style="display:none" onclick="delTr()">刪除此紀錄</button>
@@ -1148,7 +1148,7 @@ function openCD(ds){
     var ev=E.filter(function(e){return e.id===t.eventId;})[0];
     html+='<div class="trc" onclick="rmBS();openTrEdit(\''+t.id+'\',null)">'
       +'<div style="font-size:10px;color:var(--tx3);margin-bottom:3px">'+(ev?sf(ev.name):'')+'</div>'
-      +'<div style="font-size:14px;font-weight:700;color:var(--tx)">'+sf(t.memberA)+'('+((t.cntA)||1)+'次) ⇄ '+sf(t.memberB)+'('+((t.cntB)||1)+'次)</div>'
+      +'<div style="font-size:14px;font-weight:700;color:var(--tx)">'+sf(t.memberA)+'(第'+((t.cntA)||1)+'次) ⇄ '+sf(t.memberB)+'(第'+((t.cntB)||1)+'次)</div>'
       +((t.itemA||t.itemB)?'<div style="font-size:11px;color:var(--tx2);margin-top:2px">'+sf(t.itemA||'')+(t.itemA&&t.itemB?' / ':'')+sf(t.itemB||'')+'</div>':'')
       +(t.note?'<div style="font-size:11px;color:var(--tx3);margin-top:2px">備：'+sf(t.note)+'</div>':'')
       +'</div>';
@@ -1205,6 +1205,21 @@ function onTrEv(){
 }
 function onIAS(){if($('tr-ias').value)$('tr-iat').value='';}
 function onIBS(){if($('tr-ibs').value)$('tr-ibt').value='';}
+// 選擇成員時自動帶入當天的下一個序號
+function autoFillCnt(memberSelId, cntSelId){
+  var name=$(memberSelId).value;
+  var dt=$('tr-dt').value;
+  if(!name||!dt) return;
+  var count=0;
+  for(var i=0;i<TR.length;i++){
+    var x=TR[i];
+    if(eTrId&&x.id===eTrId) continue;
+    if(x.tradeDate!==dt) continue;
+    if(x.memberA===name||x.memberB===name) count++;
+  }
+  var next=Math.min(count+1,3);
+  $(cntSelId).value=String(next);
+}
 function getItName(selId,txtId){
   var txt=$(txtId).value.replace(/^\s+|\s+$/g,'');if(txt) return txt;
   var sel=$(selId);
@@ -1219,27 +1234,24 @@ function saveTr(){
   var itemB=getItName('tr-ibs','tr-ibt');
   var cntA=Number($('tr-ca').value)||1;
   var cntB=Number($('tr-cb').value)||1;
-  // 驗證：計算蕾當天不論在成員A或B位置的次數加總
-  // 例：5/22 蕾在A記錄1次 + 在B記錄2次 = 共3次（可存）
-  //     再輸入第4次（不論在A或B）→ 總計4次 → 擋住
+  // 驗證：次數A/B 是「第幾次」標記（第1次/第2次/第3次）
+  // 每人每天最多出現在 3 筆交換紀錄裡，第4筆才擋
   var allSameDay=TR.filter(function(x){
-    if(eTrId&&x.id===eTrId) return false; // 編輯時排除自己
+    if(eTrId&&x.id===eTrId) return false;
     return x.tradeDate===dt;
   });
-  // 分別計算 ma 和 mb 當天累計次數
-  function personTotal(name){
-    var total=0;
+  function personCount(name){
+    var c=0;
     for(var i=0;i<allSameDay.length;i++){
       var x=allSameDay[i];
-      if(x.memberA===name) total+=Number(x.cntA)||1;
-      if(x.memberB===name) total+=Number(x.cntB)||1;
+      if(x.memberA===name||x.memberB===name) c++;
     }
-    return total;
+    return c;
   }
-  var totalA=personTotal(ma)+cntA; // ma 當天已有次數 + 本次 cntA
-  var totalB=personTotal(mb)+cntB; // mb 當天已有次數 + 本次 cntB
-  if(totalA>3){toast('⚠ '+ma+' 今日交換次數合計將達 '+totalA+' 次，超過上限 3 次！');return;}
-  if(totalB>3){toast('⚠ '+mb+' 今日交換次數合計將達 '+totalB+' 次，超過上限 3 次！');return;}
+  var countA=personCount(ma); // ma 當天已有幾筆
+  var countB=personCount(mb); // mb 當天已有幾筆
+  if(countA>=3){toast('⚠ '+ma+' 今日已有 '+countA+' 筆交換紀錄，已達上限 3 筆！');return;}
+  if(countB>=3){toast('⚠ '+mb+' 今日已有 '+countB+' 筆交換紀錄，已達上限 3 筆！');return;}
   var eid=$('tr-ev').value;
   var pay={eventId:eid,tradeDate:dt,memberA:ma,itemA:itemA,cntA:cntA,memberB:mb,itemB:itemB,cntB:cntB,note:$('tr-nt').value||''};
   if(eTrId) pay.id=eTrId;
