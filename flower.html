@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="花朝宴">
@@ -22,13 +22,13 @@
   --safe-top:env(safe-area-inset-top,0px);
   --safe-bot:env(safe-area-inset-bottom,0px);
 }
-html,body{background:#9A7A78}
-body{margin:0;overflow:hidden;font-family:-apple-system,'Noto Sans TC','PingFang TC',sans-serif;-webkit-font-smoothing:antialiased}
+html{background:#9A7A78;height:100%}body{background:#9A7A78;height:100%}
+body{margin:0;font-family:-apple-system,'Noto Sans TC','PingFang TC',sans-serif;-webkit-font-smoothing:antialiased}
 
 /* ── Shell ── */
-#app{display:flex;flex-direction:column;position:fixed;inset:0;background:var(--sf);overflow:hidden}
+#app{display:flex;flex-direction:column;position:fixed;top:0;left:0;right:0;bottom:0;background:var(--sf);overflow:hidden}
 #sb{height:var(--safe-top);background:var(--accent);flex-shrink:0}
-#pc{flex:1;overflow:hidden;position:relative}
+#pc{flex:1;overflow:hidden;position:relative;min-height:0}
 /* ⚠ 修正：頁面底部要留 tabBar 空間 */
 .page{position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;background:var(--bg);display:none;flex-direction:column}
 .page.active{display:flex}
@@ -46,7 +46,7 @@ body{margin:0;overflow:hidden;font-family:-apple-system,'Noto Sans TC','PingFang
   z-index:500;  /* 比 panel(200) 高 */
   box-shadow:0 -1px 0 var(--bd)
 }
-.ti{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px 0;cursor:pointer;color:var(--tx3);transition:color .15s;-webkit-user-select:none}
+.ti{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px 0;cursor:pointer;color:var(--tx3);transition:color .15s;-webkit-user-select:none;touch-action:manipulation}
 .ti.on{color:var(--accent)}
 /* 簡約線條圖示 */
 .ti svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
@@ -55,7 +55,7 @@ body{margin:0;overflow:hidden;font-family:-apple-system,'Noto Sans TC','PingFang
 /* ── Header ── */
 .ah{background:var(--accent);color:#fff;padding:13px 16px;display:flex;align-items:center;gap:8px;flex-shrink:0}
 .ah h1{font-size:16px;font-weight:700;flex:1}
-.hb{background:rgba(255,255,255,.2);border:none;color:#fff;padding:7px 11px;border-radius:9px;font-size:13px;cursor:pointer;font-family:inherit;min-height:34px;white-space:nowrap}
+.hb{background:rgba(255,255,255,.2);border:none;color:#fff;padding:7px 11px;border-radius:9px;font-size:13px;cursor:pointer;font-family:inherit;min-height:34px;white-space:nowrap;touch-action:manipulation}
 .hb:active{background:rgba(255,255,255,.35)}
 .sr{display:flex;align-items:center;gap:6px;padding:4px 14px;background:var(--sf);border-bottom:1px solid var(--bd);font-size:11px;color:var(--tx3)}
 .sdot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0}
@@ -100,7 +100,7 @@ body{margin:0;overflow:hidden;font-family:-apple-system,'Noto Sans TC','PingFang
 .dbk svg{width:18px;height:18px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round}
 .dn h2{flex:1;font-size:16px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dsav{background:var(--accent);color:#fff;border:none;padding:7px 14px;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0}
-.dsc{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:13px;padding-bottom:20px}
+.dsc{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:13px;padding-bottom:20px;-webkit-overflow-scrolling:touch}
 
 /* ── Forms ── */
 .fs{background:var(--sf);border-radius:14px;border:1px solid var(--bd);margin-bottom:11px;overflow:hidden}
@@ -184,7 +184,7 @@ body{margin:0;overflow:hidden;font-family:-apple-system,'Noto Sans TC','PingFang
 .db2{background:var(--red-bg);color:var(--red-tx);border:1px solid var(--red);border-radius:7px;padding:4px 9px;font-size:11px;cursor:pointer;font-family:inherit}
 
 /* ── Bottom sheet ── */
-.bo{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:400;display:flex;align-items:flex-end}
+.bo{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.4);z-index:400;display:flex;align-items:flex-end}
 .bw{background:var(--sf);border-radius:18px 18px 0 0;width:100%;max-height:80vh;display:flex;flex-direction:column;padding-bottom:var(--safe-bot)}
 .bh{display:flex;align-items:center;padding:15px 14px;border-bottom:1px solid var(--bd);flex-shrink:0}
 .bt{flex:1;font-size:15px;font-weight:700;color:var(--tx)}
@@ -210,7 +210,7 @@ body{margin:0;overflow:hidden;font-family:-apple-system,'Noto Sans TC','PingFang
 .em p{font-size:14px;color:var(--tx3);text-align:center;line-height:1.6}
 
 /* ── Loading & Toast ── */
-#lov{display:none;position:fixed;inset:0;background:rgba(255,255,255,.85);z-index:600;align-items:center;justify-content:center;flex-direction:column;gap:9px}
+#lov{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,.85);z-index:600;align-items:center;justify-content:center;flex-direction:column;gap:9px}
 #lov.show{display:flex}
 .spin{width:30px;height:30px;border:2.5px solid var(--bd);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
