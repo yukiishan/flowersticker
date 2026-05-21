@@ -37,7 +37,7 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
 #pageWrap{flex:1;overflow:hidden;position:relative;min-height:0}
 .page{
   position:absolute;top:0;left:0;right:0;bottom:0;
-  overflow:hidden;background:var(--bg);
+  overflow:hidden;background:var(--bg);min-height:0;
   display:none;flex-direction:column;min-height:0
 }
 .page.active{display:flex}
@@ -337,11 +337,13 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .dbd{width:100%;padding:13px;background:var(--red-bg);color:var(--red-tx);border:1px solid var(--red);border-radius:13px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:4px}
 @media(min-width:520px){
-  #app{left:50%;right:auto;transform:translateX(-50%);width:480px}
-  .pg-panel{left:50%;right:auto;width:480px;transform:translateX(calc(-50% + 240px))}
-  .pg-panel.open{transform:translateX(calc(-50% + 0px))}
-  .bso{left:50%;right:auto;width:480px;transform:translateX(-50%)}
-  .bsw{max-width:480px;margin:0 auto}
+  #app{left:calc(50% - 240px);right:auto;width:480px}
+  #tabBar{left:calc(50% - 240px);right:auto;width:480px}
+  .pg-panel{left:calc(50% - 240px);right:auto;width:480px}
+  .pg-panel{transform:translateX(100%)}
+  .pg-panel.open{transform:translateX(0)}
+  .bso{left:calc(50% - 240px);right:auto;width:480px}
+  .bsw{width:100%}
 }
 </style>
 </head>
@@ -1010,7 +1012,7 @@ function rGr(){
     for(var j=0;j<recs.length;j++){
       var g=recs[j];
       var m=MB.filter(function(mb){return mb.id===g.memberId||mb.name===g.memberName;})[0];
-      out+='<div class="grw" onclick="openGrEdit(\''+g.id+'\')"><div class="gav" style="background:'+(m?m.color+'20':'var(--accent-bg)')+';color:'+(m?m.color:'var(--accent)')+'">'+sf((g.memberName||'?')[0])+'</div><div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--tx)">'+sf(g.memberName)+'</div><div style="font-size:11px;color:var(--tx3)">畢業：'fmtDate(g.gradDate||'')+'</div></div><span style="font-size:16px;color:var(--tx3)">›</span></div>';
+      out+='<div class="grw" onclick="openGrEdit(\''+g.id+'\')"><div class="gav" style="background:'+(m?m.color+'20':'var(--accent-bg)')+';color:'+(m?m.color:'var(--accent)')+'">'+sf((g.memberName||'?')[0])+'</div><div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--tx)">'+sf(g.memberName)+'</div><div style="font-size:11px;color:var(--tx3)">畢業：'+fmtDate(g.gradDate||'')+'</div></div><span style="font-size:16px;color:var(--tx3)">›</span></div>';
     }
   }
   el.innerHTML=out;
