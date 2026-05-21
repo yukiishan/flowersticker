@@ -2,1281 +2,1313 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="花朝宴">
+<meta name="apple-mobile-web-app-title" content="巡夢貼紙">
 <meta name="theme-color" content="#9A7A78">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌸</text></svg>">
-<title>花朝宴貼圖管理</title>
+<title>巡夢貼紙-泛彼柏舟</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
-  --bg:#F5EFEE;--sf:#FBF7F6;--sf2:#EDE4E3;--bd:#DDD0CF;--bd2:#C9BABA;
+  --bg:#F5EFEE;--sf:#FBF7F6;--sf2:#EDE4E3;--bd:#DDD0CF;
   --tx:#2E2321;--tx2:#6B5E5D;--tx3:#A89190;
   --rose:#C4A09E;--rose-bg:#E8D8D7;--rose-tx:#6B3E3C;
   --accent:#9A7A78;--accent-bg:#E8D8D7;--accent-dk:#7A5E5C;
   --green:#7A9E84;--green-bg:#E5EDEA;--green-tx:#3D6647;
   --amber:#B8906A;--amber-bg:#F0E6D8;--amber-tx:#6B4A28;
   --red:#B87070;--red-bg:#EEE0DF;--red-tx:#6B3030;
-  --r:12px;--rl:16px;--tab-h:62px;
-  --safe-top:env(safe-area-inset-top,0px);
-  --safe-bot:env(safe-area-inset-bottom,0px);
+  --tab-h:62px;
 }
-html{background:#9A7A78}
-body{margin:0;padding:0;background:#9A7A78;font-family:-apple-system,'Noto Sans TC','PingFang TC',sans-serif;-webkit-font-smoothing:antialiased}
-
-/* ── APP SHELL ── */
+html{background:#9A7A78;height:100%}
+body{margin:0;padding:0;height:100%;background:#9A7A78;
+  font-family:-apple-system,'Noto Sans TC','PingFang TC',sans-serif;
+  -webkit-font-smoothing:antialiased}
 #app{
-  display:flex;flex-direction:column;
   position:fixed;top:0;left:0;right:0;bottom:0;
-  background:var(--sf);
-  /* iOS Safari fix: avoid overflow:hidden on position:fixed */
-  -webkit-overflow-scrolling:touch
+  display:flex;flex-direction:column;background:var(--sf)
 }
-#statusBar{height:env(safe-area-inset-top,0px);background:var(--accent);flex-shrink:0}
-#pageContainer{flex:1;overflow:hidden;position:relative;-webkit-overflow-scrolling:touch}
-.page{position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;background:var(--bg);display:none;flex-direction:column}
+#statusBar{
+  height:env(safe-area-inset-top,0px);
+  background:var(--accent);flex-shrink:0
+}
+#pageWrap{flex:1;overflow:hidden;position:relative;min-height:0}
+.page{
+  position:absolute;top:0;left:0;right:0;bottom:0;
+  overflow:hidden;background:var(--bg);
+  display:none;flex-direction:column;min-height:0
+}
 .page.active{display:flex}
-.page-sticky-header{flex-shrink:0;background:var(--sf);border-bottom:1px solid var(--bd);z-index:10}
-.page-scroll-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:12px}
-
-/* ── TAB BAR ── */
+.ph{flex-shrink:0;background:var(--sf);border-bottom:1px solid var(--bd)}
+.ps{
+  flex:1;overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  padding-bottom:12px;
+  min-height:0
+}
 #tabBar{
   background:var(--sf);border-top:1px solid var(--bd);
-  display:flex;align-items:center;justify-content:space-around;
+  display:flex;align-items:center;
   position:fixed;left:0;right:0;bottom:0;
   height:calc(var(--tab-h) + env(safe-area-inset-bottom,0px));
   padding-bottom:env(safe-area-inset-bottom,0px);
-  flex-shrink:0;z-index:300;
-  box-shadow:0 -2px 12px rgba(0,0,0,.07)
+  z-index:900;box-shadow:0 -1px 0 var(--bd)
 }
-#tabBarSpacer{height:calc(var(--tab-h) + env(safe-area-inset-bottom,0px));flex-shrink:0}
-.tab-btn{
+#tabSp{
+  height:calc(var(--tab-h) + env(safe-area-inset-bottom,0px));
+  flex-shrink:0
+}
+.tb{
   flex:1;display:flex;flex-direction:column;
   align-items:center;justify-content:center;
   gap:2px;border:none;background:none;
   color:var(--tx3);font-size:10px;font-weight:500;
   cursor:pointer;padding:6px 0;
-  height:var(--tab-h);transition:color .2s;font-family:inherit;
-  -webkit-tap-highlight-color:transparent
+  height:var(--tab-h);min-height:var(--tab-h);
+  font-family:inherit;
+  touch-action:manipulation
 }
-.tab-btn .tab-icon{
-  width:40px;height:40px;border-radius:12px;
-  display:flex;align-items:center;justify-content:center;
-  transition:background .2s
+.tb svg{
+  width:22px;height:22px;stroke:currentColor;fill:none;
+  stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round
 }
-.tab-btn svg{
-  width:24px;height:24px;
-  stroke:currentColor;fill:none;
-  stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round
+.tb.on{color:var(--accent)}
+.tb-ic{
+  width:36px;height:36px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center
 }
-.tab-btn.active{color:var(--accent)}
-.tab-btn.active .tab-icon{background:rgba(154,122,120,.12)}
-
-/* ── HEADER ── */
-.app-header{background:var(--accent);color:#fff;padding:14px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0}
-.app-header h1{font-size:17px;font-weight:700;flex:1}
-.hdr-btn{background:rgba(255,255,255,.2);border:none;color:#fff;padding:7px 10px;border-radius:10px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:inherit;min-height:36px;white-space:nowrap;-webkit-tap-highlight-color:transparent}
-.hdr-btn:active{background:rgba(255,255,255,.35)}
-
-/* ── SYNC ROW ── */
-.sync-row{display:flex;align-items:center;gap:6px;padding:5px 14px;background:var(--sf);border-bottom:1px solid var(--bd);font-size:11px;color:var(--tx3)}
-.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0}
-.sync-dot.syncing{background:var(--amber);animation:pulse .8s infinite}
-.sync-dot.error{background:var(--red)}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-
-/* ── PILLS ── */
-.filter-pills{display:flex;gap:7px;padding:8px 14px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:var(--sf)}
-.filter-pills::-webkit-scrollbar{display:none}
-.pill{padding:5px 13px;border-radius:20px;font-size:12px;font-weight:500;border:1.5px solid var(--bd);color:var(--tx2);background:var(--sf);white-space:nowrap;cursor:pointer;transition:all .15s;flex-shrink:0}
-.pill.active{background:var(--accent);border-color:var(--accent);color:#fff}
-
-/* ── CARDS ── */
-.card-list{padding:10px 14px;display:flex;flex-direction:column;gap:10px}
-.rec-card{background:var(--sf);border-radius:var(--rl);border:1px solid var(--bd);padding:14px 15px;cursor:pointer;transition:all .15s;-webkit-user-select:none}
-.rec-card:active{background:var(--sf2);transform:scale(.99)}
-.rec-card-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px}
-.rec-card-icon{width:42px;height:42px;border-radius:11px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px}
-.rec-card-info{flex:1;min-width:0}
-.rec-card-title{font-size:15px;font-weight:700;color:var(--tx);margin-bottom:2px}
-.rec-card-sub{font-size:12px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rec-card-bottom{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
-.tag{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600}
-.tag-rose{background:var(--rose-bg);color:var(--rose-tx)}
-.tag-green{background:var(--green-bg);color:var(--green-tx)}
-.tag-amber{background:var(--amber-bg);color:var(--amber-tx)}
-
-/* ── DETAIL PAGE ── */
-.det-page{
+.tb.on .tb-ic{background:var(--accent-bg)}
+/* header */
+.ah{
+  background:var(--accent);color:#fff;
+  padding:13px 14px;
+  padding-top:calc(env(safe-area-inset-top,0px) + 13px);
+  display:flex;align-items:center;gap:8px;flex-shrink:0
+}
+.pg-panel .ah{padding-top:13px}
+.ah h1{font-size:16px;font-weight:700;flex:1}
+.hb{
+  background:rgba(255,255,255,.2);border:none;color:#fff;
+  padding:6px 10px;border-radius:9px;font-size:12px;
+  cursor:pointer;font-family:inherit;
+  min-height:34px;white-space:nowrap;
+  display:flex;align-items:center;gap:4px;
+  touch-action:manipulation
+}
+.hb:active{background:rgba(255,255,255,.35)}
+/* sync row */
+.srow{
+  display:flex;align-items:center;gap:6px;
+  padding:4px 14px;background:var(--sf);
+  border-bottom:1px solid var(--bd);
+  font-size:11px;color:var(--tx3)
+}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0}
+.sdot.sy{background:var(--amber);animation:pu .8s infinite}
+.sdot.er{background:var(--red)}
+@keyframes pu{0%,100%{opacity:1}50%{opacity:.3}}
+/* pills */
+.fps{
+  display:flex;gap:6px;padding:7px 14px;
+  overflow-x:auto;-webkit-overflow-scrolling:touch;
+  scrollbar-width:none;background:var(--sf)
+}
+.fps::-webkit-scrollbar{display:none}
+.pill{
+  padding:4px 12px;border-radius:20px;
+  font-size:12px;font-weight:500;
+  border:1.5px solid var(--bd);color:var(--tx2);
+  background:var(--sf);white-space:nowrap;
+  cursor:pointer;flex-shrink:0
+}
+.pill.on{background:var(--accent);border-color:var(--accent);color:#fff}
+/* cards */
+.cl{padding:10px 13px;display:flex;flex-direction:column;gap:9px}
+.rc{
+  background:var(--sf);border-radius:14px;
+  border:1px solid var(--bd);padding:13px 14px;cursor:pointer
+}
+.rc:active{opacity:.8}
+.rct{display:flex;align-items:flex-start;gap:10px;margin-bottom:7px}
+.rci{
+  width:40px;height:40px;border-radius:10px;
+  background:var(--accent-bg);display:flex;
+  align-items:center;justify-content:center;
+  flex-shrink:0
+}
+.rcn{flex:1;min-width:0}
+.rctit{font-size:14px;font-weight:700;color:var(--tx);margin-bottom:2px}
+.rcsub{font-size:12px;color:var(--tx2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rcb{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:5px}
+.tag{display:inline-block;padding:2px 8px;border-radius:5px;font-size:11px;font-weight:600}
+.tr{background:var(--rose-bg);color:var(--rose-tx)}
+.tg{background:var(--green-bg);color:var(--green-tx)}
+/* slide panel */
+.pg-panel{
   position:fixed;top:0;left:0;right:0;bottom:0;
-  background:var(--bg);z-index:150;
+  background:var(--bg);z-index:950;
   display:flex;flex-direction:column;
   transform:translateX(100%);
-  transition:transform .3s cubic-bezier(.25,.46,.45,.94)
+  transition:transform .28s cubic-bezier(.25,.46,.45,.94);
+  will-change:transform;
+  -webkit-backface-visibility:hidden;
+  backface-visibility:hidden
 }
-.det-page.open{transform:translateX(0)}
-/* Sub-pages (settings/maint): leave tab bar visible */
-.det-page-sub{bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px))}
-.det-nav{
+.pg-panel.open{transform:translateX(0)}
+/* sub panels: leave tab bar visible */
+.pg-sub{
+  bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px))
+}
+/* Status bar spacer inside sub-panels */
+.pg-sub-bar{
+  height:env(safe-area-inset-top,0px);
+  min-height:env(safe-area-inset-top,0px);
+  background:var(--accent);
+  flex-shrink:0;
+  display:block
+}
+/* All panel navbars */
+.dn{
   background:var(--sf);border-bottom:1px solid var(--bd);
   padding:12px 14px;
   padding-top:calc(env(safe-area-inset-top,0px) + 12px);
   display:flex;align-items:center;gap:10px;flex-shrink:0
 }
-.det-page-sub .det-nav{padding-top:12px}
-.det-nav-back{background:none;border:none;color:var(--accent);font-size:16px;font-weight:600;display:flex;align-items:center;gap:4px;cursor:pointer;padding:4px 0;font-family:inherit}
-.det-nav-back svg{width:20px;height:20px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round}
-.det-nav h2{flex:1;font-size:16px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.det-nav-save{background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
-.det-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 14px 24px}
-
-/* ── FORMS ── */
-.form-section{background:var(--sf);border-radius:var(--rl);border:1px solid var(--bd);margin-bottom:12px;overflow:hidden}
-.form-section-title{font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em;padding:12px 15px 0}
-.form-row{display:flex;flex-direction:column;padding:10px 15px;border-bottom:1px solid var(--bd)}
-.form-row:last-child{border-bottom:none}
-.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:10px 15px;border-bottom:1px solid var(--bd)}
-.form-row-2:last-child{border-bottom:none}
-.form-label{font-size:11px;font-weight:600;color:var(--tx2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
-.form-input{font-size:16px;border:none;background:none;color:var(--tx);font-family:inherit;width:100%;outline:none;padding:2px 0;-webkit-appearance:none;appearance:none;border-radius:0}
-.form-input::placeholder{color:var(--tx3)}
-.form-select{font-size:15px;border:none;background:none;color:var(--tx);font-family:inherit;width:100%;outline:none;-webkit-appearance:none;appearance:none;padding:2px 0}
-.form-input-box{background:var(--sf2);border-radius:10px;padding:10px 12px;margin-top:2px}
-.form-input-box select,.form-input-box input{background:transparent}
-
-/* ── MEMBER CHECKBOXES ── */
-.member-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
-.member-chk{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:11px;border:1.5px solid var(--bd);background:var(--sf);cursor:pointer;transition:all .15s;-webkit-user-select:none}
-.member-chk.on{border-color:var(--accent);background:var(--accent-bg)}
-.chk-box{width:20px;height:20px;border-radius:5px;border:2px solid var(--bd);background:var(--sf);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:700;color:transparent;transition:all .15s}
-.member-chk.on .chk-box{background:var(--accent);border-color:var(--accent);color:#fff}
-.chk-name{font-size:14px;font-weight:600;color:var(--tx)}
-
-/* ── STARS ── */
-.star-row{display:flex;gap:4px;margin-top:5px}
-.star-btn{font-size:22px;cursor:pointer;opacity:.2;transition:opacity .1s;-webkit-user-select:none;background:none;border:none;padding:0}
-.star-btn.on{opacity:1}
-
-/* ── CATEGORY TABS ── */
-.cat-tabs{display:flex;border-bottom:2px solid var(--bd);background:var(--sf);flex-shrink:0}
-.cat-tab{flex:1;padding:10px 4px;text-align:center;font-size:12px;font-weight:600;color:var(--tx3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;white-space:nowrap}
-.cat-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
-
-/* ── ITEM ROWS ── */
-.item-row{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--sf);border-bottom:1px solid var(--bd);cursor:pointer;-webkit-user-select:none}
-.item-row:active{background:var(--sf2)}
-.item-name{font-size:14px;font-weight:700;color:var(--tx);margin-bottom:3px}
-.item-sub{font-size:11px;color:var(--tx3);line-height:1.5}
-.item-badge{font-size:13px;font-weight:700;color:var(--tx2);flex-shrink:0}
-
-/* ── CALENDAR ── */
-.cal-dow-row{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px}
-.cal-dow{text-align:center;font-size:10px;font-weight:700;color:var(--tx3);padding:4px 0}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
-.cal-cell{min-height:46px;border-radius:9px;background:var(--sf);display:flex;flex-direction:column;align-items:center;padding:5px 2px;cursor:pointer;border:1.5px solid transparent;transition:background .1s}
-.cal-cell:active{background:var(--sf2)}
-.cal-cell.today{background:var(--accent-bg);border-color:var(--accent)}
-.cal-cell.other-m{opacity:.3}
-.cal-cell.has-trade{border-color:var(--rose);background:#FDF6F5}
-.cal-cell-num{font-size:12px;font-weight:600;color:var(--tx)}
-.cal-cell.today .cal-cell-num{color:var(--accent)}
-.cal-dots{display:flex;flex-wrap:wrap;justify-content:center;gap:2px;margin-top:2px}
-.cal-dot{width:4px;height:4px;border-radius:50%;background:var(--rose)}
-
-/* ── SETTINGS ── */
-.set-section{padding:14px 14px calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 20px)}
-.set-group-title{font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;padding:0 4px;margin-bottom:7px;margin-top:16px}
-.set-group-title:first-child{margin-top:0}
-.set-card{background:var(--sf);border-radius:var(--rl);border:1px solid var(--bd);overflow:hidden;margin-bottom:4px}
-.set-item{display:flex;align-items:center;padding:13px 14px;gap:12px;border-bottom:1px solid var(--bd);cursor:pointer}
-.set-item:last-child{border-bottom:none}
-.set-item:active{background:var(--sf2)}
-.set-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.set-icon svg{width:20px;height:20px;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-.set-item-txt{flex:1}
-.set-item-title{font-size:15px;font-weight:600;color:var(--tx)}
-.set-item-sub{font-size:12px;color:var(--tx3);margin-top:2px}
-.set-chevron{width:18px;height:18px;fill:none;stroke-width:2;stroke-linecap:round;flex-shrink:0}
-
-/* ── MAINT ── */
-.add-item-row{display:flex;gap:8px;margin-bottom:12px}
-.add-item-row input{flex:1;font-size:15px;padding:9px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--sf2);color:var(--tx);font-family:inherit;outline:none}
-.add-item-row input:focus{border-color:var(--accent)}
-.add-item-btn{padding:9px 14px;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
-.maint-item{display:flex;align-items:center;gap:10px;padding:12px 13px;background:var(--sf);border-radius:12px;border:1px solid var(--bd);margin-bottom:8px}
-.maint-item-label{flex:1;font-size:14px;font-weight:600;color:var(--tx)}
-.del-btn-sm{background:var(--red-bg);color:var(--red-tx);border:1px solid var(--red);border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer;font-family:inherit}
-
-/* ── GRAD ROWS ── */
-.grad-section-title{font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em;padding:12px 14px 6px}
-.grad-row{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--sf);border-radius:12px;border:1px solid var(--bd);margin:0 14px 8px;cursor:pointer}
-.grad-row:active{background:var(--sf2)}
-.grad-avatar{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0}
-
-/* ── TRADE CARDS ── */
-.trade-card{background:var(--sf);border-radius:12px;border:1px solid var(--bd);padding:12px 14px;margin-bottom:8px;cursor:pointer}
-.trade-card:active{background:var(--sf2)}
-
-/* ── COMBO INPUT ── */
-.combo-wrap{display:flex;flex-direction:column;gap:5px;margin-top:2px}
-.combo-wrap select,.combo-wrap input{background:var(--sf2);border-radius:10px;padding:9px 11px;font-size:15px;border:none;color:var(--tx);font-family:inherit;outline:none;width:100%;-webkit-appearance:none}
+/* Sub-panel: safe area handled by .pg-sub-bar above */
+.pg-sub .dn{padding-top:12px}
+.dbk{
+  background:none;border:none;color:var(--accent);
+  font-size:14px;font-weight:600;
+  display:flex;align-items:center;gap:3px;
+  cursor:pointer;padding:4px 0;font-family:inherit;flex-shrink:0
+}
+.dbk svg{width:18px;height:18px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round}
+.dn h2{flex:1;font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dsav{
+  background:var(--accent);color:#fff;border:none;
+  padding:7px 14px;border-radius:9px;
+  font-size:13px;font-weight:600;cursor:pointer;font-family:inherit
+}
+.dsc{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:13px 13px 24px;min-height:0}
+/* forms */
+.fs{background:var(--sf);border-radius:14px;border:1px solid var(--bd);margin-bottom:11px;overflow:hidden}
+.fst{font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em;padding:11px 14px 0}
+.fr{display:flex;flex-direction:column;padding:9px 14px;border-bottom:1px solid var(--bd)}
+.fr:last-child{border-bottom:none}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:9px 14px;border-bottom:1px solid var(--bd)}
+.fr2:last-child{border-bottom:none}
+.fl{font-size:10px;font-weight:700;color:var(--tx2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em}
+.fi{
+  font-size:16px;border:none;background:none;
+  color:var(--tx);font-family:inherit;
+  width:100%;outline:none;padding:2px 0;
+  -webkit-appearance:none;appearance:none;border-radius:0;
+  max-width:100%
+}
+.fi::placeholder{color:var(--tx3)}
+.fse{
+  font-size:14px;border:none;background:none;
+  color:var(--tx);font-family:inherit;
+  width:100%;outline:none;
+  -webkit-appearance:none;appearance:none;padding:2px 0
+}
+.fb{background:var(--sf2);border-radius:9px;padding:9px 11px;margin-top:2px}
+.fb .fi,.fb .fse{background:transparent}
+/* combo */
+.combo{display:flex;flex-direction:column;gap:5px;margin-top:2px}
+.combo .fse,.combo .fi{
+  background:var(--sf2);border-radius:9px;
+  padding:9px 11px;width:100%;
+  -webkit-appearance:none;appearance:none
+}
 .combo-or{text-align:center;font-size:10px;color:var(--tx3)}
-
-/* ── BOTTOM SHEET ── */
-.bs-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:400;display:flex;align-items:flex-end}
-.bs-wrap{background:var(--sf);border-radius:20px 20px 0 0;width:100%;max-height:82vh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom,0px)}
-.bs-header{display:flex;align-items:center;padding:15px 14px;border-bottom:1px solid var(--bd);flex-shrink:0}
-.bs-title{flex:1;font-size:15px;font-weight:700;color:var(--tx)}
-.bs-close-btn{background:none;border:none;font-size:20px;color:var(--tx3);cursor:pointer;padding:0;line-height:1}
-.bs-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:13px}
-
-/* ── EMPTY STATE ── */
-.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 32px;gap:12px}
-.empty-state svg{width:48px;height:48px;stroke:var(--tx3);fill:none;stroke-width:1.5}
-.empty-state p{font-size:14px;color:var(--tx3);text-align:center;line-height:1.6}
-
-/* ── LOADING / TOAST ── */
-#loadingOverlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,.85);z-index:600;align-items:center;justify-content:center;flex-direction:column;gap:10px}
-#loadingOverlay.show{display:flex}
-.spinner{width:32px;height:32px;border:3px solid var(--bd);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-#toast{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 12px);left:50%;transform:translateX(-50%) translateY(10px);background:rgba(46,35,33,.92);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;z-index:700;opacity:0;transition:all .3s;white-space:nowrap;pointer-events:none;max-width:90vw;text-align:center}
+/* member checks */
+.mg{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:4px}
+.mc{
+  display:flex;align-items:center;gap:7px;
+  padding:9px 11px;border-radius:10px;
+  border:1.5px solid var(--bd);background:var(--sf);
+  cursor:pointer;-webkit-user-select:none;user-select:none
+}
+.mc.on{border-color:var(--accent);background:var(--accent-bg)}
+.mcb{
+  width:18px;height:18px;border-radius:4px;
+  border:2px solid var(--bd);background:var(--sf);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;font-size:10px;font-weight:700;color:transparent
+}
+.mc.on .mcb{background:var(--accent);border-color:var(--accent);color:#fff}
+.mcn{font-size:13px;font-weight:600;color:var(--tx)}
+/* stars */
+.strow{display:flex;gap:3px;margin-top:5px}
+.stbtn{
+  font-size:22px;cursor:pointer;opacity:.2;
+  background:none;border:none;padding:0;-webkit-user-select:none;user-select:none
+}
+.stbtn.on{opacity:1}
+/* cat tabs */
+.ctabs{display:flex;border-bottom:2px solid var(--bd);background:var(--sf);flex-shrink:0}
+.ctab{
+  flex:1;padding:9px 3px;text-align:center;
+  font-size:11px;font-weight:600;color:var(--tx3);
+  cursor:pointer;border-bottom:2px solid transparent;
+  margin-bottom:-2px;white-space:nowrap
+}
+.ctab.on{color:var(--accent);border-bottom-color:var(--accent)}
+/* item rows */
+.ir{
+  display:flex;align-items:center;gap:9px;
+  padding:11px 13px;background:var(--sf);
+  border-bottom:1px solid var(--bd);cursor:pointer
+}
+.ir:active{background:var(--sf2)}
+.inn{font-size:14px;font-weight:700;color:var(--tx);margin-bottom:2px}
+.isb{font-size:11px;color:var(--tx3);line-height:1.5}
+.ibg{font-size:12px;font-weight:700;color:var(--tx2);flex-shrink:0}
+/* calendar */
+.cnav{display:flex;align-items:center;gap:7px;padding:7px 13px;border-bottom:1px solid var(--bd);background:var(--sf)}
+.cnb{background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;color:var(--tx2);font-family:inherit}
+.cns{flex:1;font-size:13px;padding:7px 9px;border:1px solid var(--bd);border-radius:8px;background:var(--sf);color:var(--tx);font-family:inherit;outline:none;-webkit-appearance:none;appearance:none}
+.dr{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px}
+.dow{text-align:center;font-size:10px;font-weight:700;color:var(--tx3);padding:3px 0}
+.cg{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cc{
+  min-height:44px;border-radius:8px;background:var(--sf);
+  display:flex;flex-direction:column;align-items:center;
+  padding:4px 2px;cursor:pointer;
+  border:1.5px solid transparent
+}
+.cc:active{background:var(--sf2)}
+.cc.today{background:var(--accent-bg);border-color:var(--accent)}
+.cc.om{opacity:.3}
+.cc.ht{border-color:var(--rose);background:#FDF6F5}
+.ccn{font-size:12px;font-weight:600;color:var(--tx)}
+.cc.today .ccn{color:var(--accent)}
+.cdots{display:flex;flex-wrap:wrap;justify-content:center;gap:2px;margin-top:2px}
+.cdot{width:4px;height:4px;border-radius:50%;background:var(--rose)}
+/* settings */
+.setsc{padding:13px 13px calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px)}
+.setg{font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em;padding:0 3px;margin-bottom:7px;margin-top:14px}
+.setg:first-child{margin-top:0}
+.setcd{background:var(--sf);border-radius:14px;border:1px solid var(--bd);overflow:hidden}
+.si{display:flex;align-items:center;gap:11px;padding:13px 13px;border-bottom:1px solid var(--bd);cursor:pointer}
+.si:last-child{border-bottom:none}
+.si:active{background:var(--sf2)}
+.sic{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sic svg{width:18px;height:18px;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.sit{flex:1}
+.sti{font-size:14px;font-weight:600;color:var(--tx)}
+.ssu{font-size:11px;color:var(--tx3);margin-top:1px}
+/* maint */
+.mbar{padding:9px 13px;background:var(--bg);border-bottom:1px solid var(--bd);flex-shrink:0;display:flex;gap:7px}
+.mii{flex:1;padding:9px 11px;border:1.5px solid var(--bd);border-radius:9px;font-size:14px;font-family:inherit;background:var(--sf);color:var(--tx);outline:none}
+.mii:focus{border-color:var(--accent)}
+.mab{padding:9px 13px;border-radius:9px;background:var(--accent);color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+.mit{display:flex;align-items:center;gap:9px;padding:11px 13px;background:var(--sf);border-radius:11px;border:1px solid var(--bd);margin-bottom:7px}
+.mil{flex:1;font-size:14px;font-weight:600;color:var(--tx)}
+.dbs{background:var(--red-bg);color:var(--red-tx);border:1px solid var(--red);border-radius:7px;padding:4px 9px;font-size:11px;cursor:pointer;font-family:inherit}
+/* bottom sheet */
+.bso{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.4);z-index:1000;display:flex;align-items:flex-end}
+.bsw{background:var(--sf);border-radius:18px 18px 0 0;width:100%;max-height:80vh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom,0px)}
+.bsh{display:flex;align-items:center;padding:14px 13px;border-bottom:1px solid var(--bd);flex-shrink:0}
+.bst{flex:1;font-size:14px;font-weight:700;color:var(--tx)}
+.bsc{background:none;border:none;font-size:20px;color:var(--tx3);cursor:pointer;padding:0;line-height:1}
+.bsb{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:13px}
+/* grad */
+.gst{font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em;padding:11px 13px 5px}
+.grw{display:flex;align-items:center;gap:9px;padding:11px 13px;background:var(--sf);border-radius:11px;border:1px solid var(--bd);margin:0 13px 7px;cursor:pointer}
+.grw:active{background:var(--sf2)}
+.gav{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+/* trade card */
+.trc{background:var(--sf);border-radius:11px;border:1px solid var(--bd);padding:11px 13px;margin-bottom:7px;cursor:pointer}
+.trc:active{background:var(--sf2)}
+/* empty */
+.em{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:52px 28px;gap:9px}
+.em svg{width:44px;height:44px;stroke:var(--tx3);fill:none;stroke-width:1.5}
+.em p{font-size:14px;color:var(--tx3);text-align:center;line-height:1.6}
+/* loading toast */
+#lov{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,.85);z-index:1100;align-items:center;justify-content:center;flex-direction:column;gap:9px}
+#lov.show{display:flex}
+.spin{width:30px;height:30px;border:3px solid var(--bd);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+#toast{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 12px);left:50%;transform:translateX(-50%) translateY(6px);background:rgba(46,35,33,.92);color:#fff;padding:9px 16px;border-radius:9px;font-size:13px;z-index:1200;opacity:0;transition:all .25s;white-space:nowrap;pointer-events:none;max-width:88vw;text-align:center}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-
-.del-big-btn{width:100%;padding:14px;background:var(--red-bg);color:var(--red-tx);border:1px solid var(--red);border-radius:var(--rl);font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:4px}
-
-@media(min-width:480px){#app{left:50%;right:auto;transform:translateX(-50%);width:480px}}
+.dbd{width:100%;padding:13px;background:var(--red-bg);color:var(--red-tx);border:1px solid var(--red);border-radius:13px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:4px}
+@media(min-width:520px){
+  #app{left:50%;right:auto;transform:translateX(-50%);width:480px}
+  .pg-panel{left:50%;right:auto;width:480px;transform:translateX(calc(-50% + 240px))}
+  .pg-panel.open{transform:translateX(calc(-50% + 0px))}
+  .bso{left:50%;right:auto;width:480px;transform:translateX(-50%)}
+  .bsw{max-width:480px;margin:0 auto}
+}
 </style>
 </head>
 <body>
-
-<!-- ═══ MAIN APP ═══ -->
 <div id="app">
   <div id="statusBar"></div>
+  <div id="pageWrap">
 
-  <div id="pageContainer">
-
-    <!-- PAGE 1: 活動 -->
-    <div class="page active" id="page-ev">
-      <div class="page-sticky-header">
-        <div class="app-header">
-          <h1>花朝宴</h1>
-          <button class="hdr-btn" onclick="manualSync()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23,4 23,10 17,10"/><polyline points="1,20 1,14 7,14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
-            同步
+    <!-- PAGE 1 活動 -->
+    <div class="page active" id="pg-ev">
+      <div class="ph">
+        <div class="ah">
+          <h1>巡夢貼紙</h1>
+          <button class="hb" onclick="doSync()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="23,4 23,10 17,10"/><polyline points="1,20 1,14 7,14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>同步
           </button>
-          <button class="hdr-btn" onclick="openEvEdit(null)">＋</button>
+          <button class="hb" onclick="openEvEdit(null)">＋</button>
         </div>
-        <div class="sync-row"><div class="sync-dot" id="syncDot"></div><span id="syncLabel">已同步</span><span id="syncTime" style="margin-left:auto;font-size:10px"></span></div>
-        <div class="filter-pills" id="evPills"></div>
+        <div class="srow"><div class="sdot" id="sdot"></div><span id="slbl">就緒</span><span id="stm" style="margin-left:auto;font-size:10px"></span></div>
+        <div class="fps" id="evP"></div>
       </div>
-      <div class="page-scroll-body"><div class="card-list" id="evList"></div></div>
+      <div class="ps"><div class="cl" id="evL"></div></div>
     </div>
 
-    <!-- PAGE 2: 畢業 -->
-    <div class="page" id="page-gr">
-      <div class="page-sticky-header">
-        <div class="app-header">
+    <!-- PAGE 2 畢業 -->
+    <div class="page" id="pg-gr">
+      <div class="ph">
+        <div class="ah">
           <h1>畢業紀錄</h1>
-          <button class="hdr-btn" onclick="openGrEdit(null)">＋</button>
+          <button class="hb" onclick="doSync()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="23,4 23,10 17,10"/><polyline points="1,20 1,14 7,14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>同步
+          </button>
+          <button class="hb" onclick="openGrEdit(null)">＋</button>
         </div>
-        <div class="filter-pills" id="grPills"></div>
+        <div class="fps" id="grP"></div>
       </div>
-      <div class="page-scroll-body" id="grList"></div>
+      <div class="ps" id="grL"></div>
     </div>
 
-    <!-- PAGE 3: 交換 -->
-    <div class="page" id="page-tr">
-      <div class="page-sticky-header">
-        <div class="app-header">
+    <!-- PAGE 3 交換 -->
+    <div class="page" id="pg-tr">
+      <div class="ph">
+        <div class="ah">
           <h1>交換日曆</h1>
-          <button class="hdr-btn" onclick="openTrEdit(null,null)">＋</button>
+          <button class="hb" onclick="doSync()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="23,4 23,10 17,10"/><polyline points="1,20 1,14 7,14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>同步
+          </button>
+          <button class="hb" onclick="openTrEdit(null,null)">＋</button>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--sf);border-bottom:1px solid var(--bd)">
-          <button class="hdr-btn" style="background:var(--sf2);color:var(--tx2);border:1px solid var(--bd)" onclick="calShift(-1)">◀</button>
-          <select id="calY" onchange="renderCal()" style="flex:1;font-size:14px;padding:7px 10px;border:1px solid var(--bd);border-radius:10px;background:var(--sf);color:var(--tx);font-family:inherit;outline:none"></select>
-          <select id="calM" onchange="renderCal()" style="flex:1;font-size:14px;padding:7px 10px;border:1px solid var(--bd);border-radius:10px;background:var(--sf);color:var(--tx);font-family:inherit;outline:none">
+        <div class="cnav">
+          <button class="cnb" onclick="calSh(-1)">◀</button>
+          <select id="calY" class="cns" onchange="renderCal()"></select>
+          <select id="calM" class="cns" onchange="renderCal()">
             <option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
           </select>
-          <button class="hdr-btn" style="background:var(--sf2);color:var(--tx2);border:1px solid var(--bd)" onclick="calShift(1)">▶</button>
+          <button class="cnb" onclick="calSh(1)">▶</button>
         </div>
-        <div class="filter-pills" id="trPills"></div>
+        <div class="fps" id="trP"></div>
       </div>
-      <div class="page-scroll-body">
-        <div style="padding:11px 13px">
-          <div class="cal-dow-row" id="calDow"></div>
-          <div class="cal-grid" id="calGrid"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- PAGE 4: 設定 -->
-    <div class="page" id="page-set">
-      <div class="page-sticky-header">
-        <div class="app-header"><h1>設定</h1></div>
-      </div>
-      <div class="page-scroll-body">
-        <div class="set-section">
-          <div class="set-group-title">維護管理</div>
-          <div class="set-card">
-            <div class="set-item" onclick="openMaint('member')">
-              <div class="set-icon" style="background:var(--accent-bg)">
-                <svg viewBox="0 0 24 24" stroke="var(--accent)"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><path d="M16 3.13a4 4 0 010 7.75"/><path d="M21 21v-2a4 4 0 00-3-3.87"/></svg>
-              </div>
-              <div class="set-item-txt"><div class="set-item-title">成員維護</div><div class="set-item-sub" id="sub-mb">管理成員名單</div></div>
-              <svg class="set-chevron" viewBox="0 0 24 24" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round"><polyline points="9,18 15,12 9,6"/></svg>
-            </div>
-            <div class="set-item" onclick="openMaint('album')">
-              <div class="set-icon" style="background:var(--accent-bg)">
-                <svg viewBox="0 0 24 24" stroke="var(--accent)"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-              </div>
-              <div class="set-item-txt"><div class="set-item-title">相冊維護</div><div class="set-item-sub" id="sub-al">管理相冊名稱</div></div>
-              <svg class="set-chevron" viewBox="0 0 24 24" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round"><polyline points="9,18 15,12 9,6"/></svg>
-            </div>
-            <div class="set-item" onclick="openMaint('event')">
-              <div class="set-icon" style="background:var(--accent-bg)">
-                <svg viewBox="0 0 24 24" stroke="var(--accent)"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              </div>
-              <div class="set-item-txt"><div class="set-item-title">活動維護</div><div class="set-item-sub" id="sub-ev">活動名稱、時間、相冊設定</div></div>
-              <svg class="set-chevron" viewBox="0 0 24 24" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round"><polyline points="9,18 15,12 9,6"/></svg>
-            </div>
-          </div>
-          <div class="set-group-title">資料</div>
-          <div class="set-card">
-            <div class="set-item" onclick="manualSync()">
-              <div class="set-icon" style="background:var(--green-bg)">
-                <svg viewBox="0 0 24 24" stroke="var(--green)"><polyline points="23,4 23,10 17,10"/><polyline points="1,20 1,14 7,14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
-              </div>
-              <div class="set-item-txt"><div class="set-item-title">立即同步</div><div class="set-item-sub">從 Google Sheets 重新載入</div></div>
-              <svg class="set-chevron" viewBox="0 0 24 24" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round"><polyline points="9,18 15,12 9,6"/></svg>
-            </div>
-            <div class="set-item" onclick="exportJSON()">
-              <div class="set-icon" style="background:var(--blue-bg,#E2EBF2)">
-                <svg viewBox="0 0 24 24" stroke="#3D5F78"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              </div>
-              <div class="set-item-txt"><div class="set-item-title">備份資料</div><div class="set-item-sub">下載 JSON · 每週五 17:00 自動備份</div></div>
-              <svg class="set-chevron" viewBox="0 0 24 24" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round"><polyline points="9,18 15,12 9,6"/></svg>
-            </div>
-          </div>
-          <div style="text-align:center;padding:16px;font-size:12px;color:var(--tx3)">花朝宴貼圖管理系統 · 2026</div>
+      <div class="ps">
+        <div style="padding:10px 12px">
+          <div class="dr" id="cald"></div>
+          <div class="cg" id="calg"></div>
         </div>
       </div>
     </div>
 
-  </div><!-- /pageContainer -->
+    <!-- PAGE 4 設定 -->
+    <div class="page" id="pg-set">
+      <div class="ph"><div class="ah"><h1>設定</h1></div></div>
+      <div class="ps">
+        <div class="setsc">
+          <div class="setg">維護管理</div>
+          <div class="setcd">
+            <div class="si" onclick="openMaint('mb')"><div class="sic" style="background:var(--accent-bg)"><svg viewBox="0 0 24 24" stroke="var(--accent)"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><path d="M16 3.13a4 4 0 010 7.75M21 21v-2a4 4 0 00-3-3.87"/></svg></div><div class="sit"><div class="sti">成員維護</div><div class="ssu" id="sub-mb">管理成員名單</div></div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round"><polyline points="9,18 15,12 9,6"/></svg></div>
+            <div class="si" onclick="openMaint('al')"><div class="sic" style="background:var(--accent-bg)"><svg viewBox="0 0 24 24" stroke="var(--accent)"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div><div class="sit"><div class="sti">相冊維護</div><div class="ssu" id="sub-al">管理相冊名稱</div></div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round"><polyline points="9,18 15,12 9,6"/></svg></div>
+            <div class="si" onclick="openMaint('ev')"><div class="sic" style="background:var(--accent-bg)"><svg viewBox="0 0 24 24" stroke="var(--accent)"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><div class="sit"><div class="sti">活動維護</div><div class="ssu" id="sub-ev">活動名稱、時間、相冊設定</div></div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round"><polyline points="9,18 15,12 9,6"/></svg></div>
+          </div>
+          <div class="setg">資料</div>
+          <div class="setcd">
+            <div class="si" onclick="doSync()"><div class="sic" style="background:var(--green-bg)"><svg viewBox="0 0 24 24" stroke="var(--green)"><polyline points="23,4 23,10 17,10"/><polyline points="1,20 1,14 7,14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg></div><div class="sit"><div class="sti">立即同步</div><div class="ssu">從 Google Sheets 重新載入</div></div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round"><polyline points="9,18 15,12 9,6"/></svg></div>
+            <div class="si" onclick="exportJSON()"><div class="sic" style="background:#E2EBF2"><svg viewBox="0 0 24 24" stroke="#3D5F78"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div><div class="sit"><div class="sti">備份資料</div><div class="ssu">下載 JSON · 每週五 17:00 自動備份雲端</div></div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2" stroke-linecap="round"><polyline points="9,18 15,12 9,6"/></svg></div>
+          </div>
+          <div style="text-align:center;padding:14px;font-size:11px;color:var(--tx3)">巡夢貼紙-泛彼柏舟 · 2026</div>
+        </div>
+      </div>
+    </div>
 
-  <!-- TAB BAR -->
+  </div><!-- /pageWrap -->
+  <div id="tabSp"></div>
   <div id="tabBar">
-    <button class="tab-btn active" id="tab-ev" onclick="showPage('page-ev')">
-      <div class="tab-icon">
-        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
-      </div>
-      活動
-    </button>
-    <button class="tab-btn" id="tab-gr" onclick="showPage('page-gr')">
-      <div class="tab-icon">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0112 0v2"/></svg>
-      </div>
-      畢業
-    </button>
-    <button class="tab-btn" id="tab-tr" onclick="showPage('page-tr')">
-      <div class="tab-icon">
-        <svg viewBox="0 0 24 24"><polyline points="17,1 21,5 17,9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7,23 3,19 7,15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
-      </div>
-      交換
-    </button>
-    <button class="tab-btn" id="tab-set" onclick="showPage('page-set')">
-      <div class="tab-icon">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
-      </div>
-      設定
-    </button>
-  </div>
-  <div id="tabBarSpacer"></div>
-</div><!-- /app -->
-
-<!-- ═══ SLIDE PANELS ═══ -->
-
-<!-- Event Edit -->
-<div class="det-page" id="pg-evEdit">
-  <div class="det-nav">
-    <button class="det-nav-back" onclick="closePanel('pg-evEdit')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button>
-    <h2 id="evEditTitle">新增活動</h2>
-    <button class="det-nav-save" onclick="saveEvEdit()">儲存</button>
-  </div>
-  <div class="det-scroll">
-    <div class="form-section">
-      <div class="form-section-title">活動資訊</div>
-      <div class="form-row"><div class="form-label">活動名稱</div><div class="form-input-box"><input id="ev-name" class="form-input" placeholder="例：花朝宴 2026"></div></div>
-      <div class="form-row-2">
-        <div><div class="form-label">開始日期</div><div class="form-input-box"><input id="ev-start" class="form-input" type="date"></div></div>
-        <div><div class="form-label">結束日期</div><div class="form-input-box"><input id="ev-end" class="form-input" type="date"></div></div>
-      </div>
-    </div>
-    <button class="del-big-btn" id="evDelBtn" style="display:none" onclick="delEvEdit()">刪除此活動</button>
+    <button class="tb on" id="tb-ev" onclick="goPage('ev')"><div class="tb-ic"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg></div>活動</button>
+    <button class="tb" id="tb-gr" onclick="goPage('gr')"><div class="tb-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0112 0v2"/></svg></div>畢業</button>
+    <button class="tb" id="tb-tr" onclick="goPage('tr')"><div class="tb-ic"><svg viewBox="0 0 24 24"><polyline points="17,1 21,5 17,9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7,23 3,19 7,15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg></div>交換</button>
+    <button class="tb" id="tb-set" onclick="goPage('set')"><div class="tb-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg></div>設定</button>
   </div>
 </div>
 
-<!-- Event Detail (物品列表) -->
-<div class="det-page" id="pg-evDetail">
-  <div class="det-nav">
-    <button class="det-nav-back" onclick="closePanel('pg-evDetail')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button>
-    <h2 id="evDetailTitle">物品列表</h2>
-    <button class="hdr-btn" style="background:var(--accent-dk);padding:6px 10px" onclick="openItEdit(null)">＋</button>
+<!-- PANELS -->
+<!-- Event Edit -->
+<div class="pg-panel" id="pp-evEd">
+  <div class="dn"><button class="dbk" onclick="cp('pp-evEd')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button><h2 id="evEdT">新增活動</h2><button class="dsav" onclick="saveEv()">儲存</button></div>
+  <div class="dsc">
+    <div class="fs">
+      <div class="fst">活動資訊</div>
+      <div class="fr"><div class="fl">活動名稱</div><div class="fb"><input id="ev-nm" class="fi" placeholder="例：花朝宴 2026"></div></div>
+      <div class="fr2"><div><div class="fl">開始日期</div><div class="fb"><input id="ev-s" class="fi" type="date"></div></div><div><div class="fl">結束日期</div><div class="fb"><input id="ev-e" class="fi" type="date"></div></div></div>
+    </div>
+    <button class="dbd" id="evDelB" style="display:none" onclick="delEv()">刪除此活動</button>
   </div>
-  <div style="background:var(--sf);border-bottom:1px solid var(--bd);padding:5px 14px;flex-shrink:0;font-size:11px;color:var(--tx3)" id="evDetailInfo"></div>
-  <div class="cat-tabs">
-    <div class="cat-tab active" data-cat="all" onclick="setCat('all')">全部</div>
-    <div class="cat-tab" data-cat="owned" onclick="setCat('owned')">✅ 已持有</div>
-    <div class="cat-tab" data-cat="unowned" onclick="setCat('unowned')">❌ 未持有</div>
-    <div class="cat-tab" data-cat="extra" onclick="setCat('extra')">⭐ 多餘</div>
-  </div>
-  <div class="page-scroll-body" id="itemList"></div>
+</div>
+
+<!-- Event Detail -->
+<div class="pg-panel" id="pp-evDt">
+  <div class="dn"><button class="dbk" onclick="cp('pp-evDt')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button><h2 id="dtTit">物品列表</h2><button class="hb" style="background:var(--accent-dk);padding:5px 10px" onclick="openItEdit(null)">＋</button></div>
+  <div style="background:var(--sf);border-bottom:1px solid var(--bd);padding:5px 13px;flex-shrink:0;font-size:11px;color:var(--tx3)" id="dtInf"></div>
+  <div class="ctabs"><div class="ctab on" data-c="all" onclick="setCat('all')">全部</div><div class="ctab" data-c="owned" onclick="setCat('owned')">✅ 已持有</div><div class="ctab" data-c="unowned" onclick="setCat('unowned')">❌ 未持有</div><div class="ctab" data-c="extra" onclick="setCat('extra')">⭐ 多餘</div></div>
+  <div class="ps" id="itL"></div>
 </div>
 
 <!-- Item Edit -->
-<div class="det-page" id="pg-itEdit">
-  <div class="det-nav">
-    <button class="det-nav-back" onclick="closePanel('pg-itEdit')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button>
-    <h2 id="itEditTitle">新增物品</h2>
-    <button class="det-nav-save" onclick="saveItEdit()">儲存</button>
-  </div>
-  <div class="det-scroll">
-    <div class="form-section">
-      <div class="form-section-title">物品資訊</div>
-      <div class="form-row"><div class="form-label">物品名稱</div><div class="form-input-box"><input id="it-name" class="form-input" placeholder="例：菊花粥"></div></div>
-      <div class="form-row"><div class="form-label">相冊名</div><div class="form-input-box"><select id="it-album" class="form-select"><option value="">-- 不指定 --</option></select></div></div>
-      <div class="form-row">
-        <div class="form-label">星級</div>
-        <div class="star-row" id="starRow">
-          <button class="star-btn" data-s="1" onclick="setStar(1)">★</button>
-          <button class="star-btn" data-s="2" onclick="setStar(2)">★</button>
-          <button class="star-btn" data-s="3" onclick="setStar(3)">★</button>
-          <button class="star-btn" data-s="4" onclick="setStar(4)">★</button>
-          <button class="star-btn" data-s="5" onclick="setStar(5)">★</button>
-        </div>
-      </div>
+<div class="pg-panel" id="pp-itEd">
+  <div class="dn"><button class="dbk" onclick="cp('pp-itEd')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button><h2 id="itEdT">新增物品</h2><button class="dsav" onclick="saveIt()">儲存</button></div>
+  <div class="dsc">
+    <div class="fs">
+      <div class="fst">物品資訊</div>
+      <div class="fr"><div class="fl">物品名稱</div><div class="fb"><input id="it-nm" class="fi" placeholder="例：菊花粥"></div></div>
+      <div class="fr"><div class="fl">相冊名 <span style="font-weight:400;text-transform:none">（依活動相冊篩選）</span></div><div class="fb"><select id="it-al" class="fse"><option value="">-- 不指定 --</option></select></div></div>
+      <div class="fr"><div class="fl">星級</div><div class="strow" id="stR"><button class="stbtn" data-s="1" onclick="setStar(1)">★</button><button class="stbtn" data-s="2" onclick="setStar(2)">★</button><button class="stbtn" data-s="3" onclick="setStar(3)">★</button><button class="stbtn" data-s="4" onclick="setStar(4)">★</button><button class="stbtn" data-s="5" onclick="setStar(5)">★</button></div></div>
     </div>
-    <div class="form-section">
-      <div class="form-section-title">未持有成員 <span style="font-weight:400;font-size:9px;text-transform:none">勾選＝尚未擁有</span></div>
-      <div style="padding:10px 15px"><div class="member-grid" id="unownedGrid"></div></div>
-    </div>
-    <div class="form-section">
-      <div class="form-section-title">已持有成員 <span style="font-weight:400;font-size:9px;text-transform:none">自動計算</span></div>
-      <div style="padding:10px 15px"><div id="ownedDisp" style="display:flex;flex-wrap:wrap;gap:4px;min-height:22px"></div></div>
-    </div>
-    <div class="form-section">
-      <div class="form-section-title">多餘成員 <span style="font-weight:400;font-size:9px;text-transform:none">勾選＝有多的</span></div>
-      <div style="padding:10px 15px"><div class="member-grid" id="extraGrid"></div></div>
-    </div>
-    <button class="del-big-btn" id="itDelBtn" style="display:none" onclick="delItEdit()">刪除此物品</button>
+    <div class="fs"><div class="fst">未持有成員 <span style="font-weight:400;text-transform:none">勾選＝尚未擁有</span></div><div style="padding:9px 13px"><div class="mg" id="unG"></div></div></div>
+    <div class="fs"><div class="fst">已持有成員 <span style="font-weight:400;text-transform:none">自動計算</span></div><div style="padding:9px 13px"><div id="owD" style="display:flex;flex-wrap:wrap;gap:4px;min-height:22px"></div></div></div>
+    <div class="fs"><div class="fst">多餘成員 <span style="font-weight:400;text-transform:none">勾選＝有多的</span></div><div style="padding:9px 13px"><div class="mg" id="exG"></div></div></div>
+    <button class="dbd" id="itDelB" style="display:none" onclick="delIt()">刪除此物品</button>
   </div>
 </div>
 
 <!-- Grad Edit -->
-<div class="det-page" id="pg-grEdit">
-  <div class="det-nav">
-    <button class="det-nav-back" onclick="closePanel('pg-grEdit')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button>
-    <h2 id="grEditTitle">新增畢業紀錄</h2>
-    <button class="det-nav-save" onclick="saveGrEdit()">儲存</button>
-  </div>
-  <div class="det-scroll">
-    <div class="form-section">
-      <div class="form-section-title">畢業資訊</div>
-      <div class="form-row"><div class="form-label">活動</div><div class="form-input-box"><select id="gr-ev" class="form-select" onchange="onGrEvChange()"><option value="">-- 選擇活動 --</option></select></div></div>
-      <div id="gr-ev-info" style="margin:0 15px 2px;font-size:11px;color:var(--tx3);display:none;padding:3px 0"></div>
-      <div class="form-row"><div class="form-label">成員</div><div class="form-input-box"><select id="gr-mb" class="form-select"><option value="">-- 選擇成員 --</option></select></div></div>
-      <div class="form-row"><div class="form-label">畢業日期</div><div class="form-input-box"><input id="gr-date" class="form-input" type="date"></div></div>
+<div class="pg-panel" id="pp-grEd">
+  <div class="dn"><button class="dbk" onclick="cp('pp-grEd')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button><h2 id="grEdT">新增畢業紀錄</h2><button class="dsav" onclick="saveGr()">儲存</button></div>
+  <div class="dsc">
+    <div class="fs">
+      <div class="fst">畢業資訊</div>
+      <div class="fr"><div class="fl">活動</div><div class="fb"><select id="gr-ev" class="fse" onchange="onGrEv()"><option value="">-- 選擇活動 --</option></select></div></div>
+      <div id="gr-ei" style="margin:0 13px 2px;font-size:11px;color:var(--tx3);display:none;padding:3px 0"></div>
+      <div class="fr"><div class="fl">成員</div><div class="fb"><select id="gr-mb" class="fse"><option value="">-- 選擇成員 --</option></select></div></div>
+      <div class="fr"><div class="fl">畢業日期</div><div class="fb"><input id="gr-dt" class="fi" type="date"></div></div>
     </div>
-    <button class="del-big-btn" id="grDelBtn" style="display:none" onclick="delGrEdit()">刪除此紀錄</button>
+    <button class="dbd" id="grDelB" style="display:none" onclick="delGr()">刪除此紀錄</button>
   </div>
 </div>
 
 <!-- Trade Edit -->
-<div class="det-page" id="pg-trEdit">
-  <div class="det-nav">
-    <button class="det-nav-back" onclick="closePanel('pg-trEdit')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button>
-    <h2 id="trEditTitle">新增交換紀錄</h2>
-    <button class="det-nav-save" onclick="saveTrEdit()">儲存</button>
-  </div>
-  <div class="det-scroll">
-    <div class="form-section">
-      <div class="form-section-title">基本資訊</div>
-      <div class="form-row"><div class="form-label">活動</div><div class="form-input-box"><select id="tr-ev" class="form-select" onchange="onTrEvChange()"><option value="">-- 選擇活動 --</option></select></div></div>
-      <div class="form-row"><div class="form-label">交換日期</div><div class="form-input-box"><input id="tr-date" class="form-input" type="date"></div></div>
+<div class="pg-panel" id="pp-trEd">
+  <div class="dn"><button class="dbk" onclick="cp('pp-trEd')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button><h2 id="trEdT">新增交換紀錄</h2><button class="dsav" onclick="saveTr()">儲存</button></div>
+  <div class="dsc">
+    <div class="fs">
+      <div class="fst">基本資訊</div>
+      <div class="fr"><div class="fl">活動</div><div class="fb"><select id="tr-ev" class="fse" onchange="onTrEv()"><option value="">-- 選擇活動 --</option></select></div></div>
+      <div class="fr"><div class="fl">交換日期</div><div class="fb"><input id="tr-dt" class="fi" type="date"></div></div>
     </div>
-    <div class="form-section">
-      <div class="form-section-title">成員 A</div>
-      <div class="form-row"><div class="form-label">成員</div><div class="form-input-box"><select id="tr-ma" class="form-select"><option value="">-- 選擇 --</option></select></div></div>
-      <div class="form-row">
-        <div class="form-label">交換物品 A</div>
-        <div class="combo-wrap">
-          <select id="tr-ia-sel" class="form-select" onchange="onIASel()"><option value="">-- 從清單選擇 --</option></select>
+    <div class="fs">
+      <div class="fst">成員 A</div>
+      <div class="fr"><div class="fl">成員</div><div class="fb"><select id="tr-ma" class="fse"><option value="">-- 選擇 --</option></select></div></div>
+      <div class="fr"><div class="fl">交換物品 A</div>
+        <div class="combo">
+          <select id="tr-ias" class="fse" onchange="onIAS()"><option value="">-- 從清單選 --</option></select>
           <div class="combo-or">─ 或手動輸入 ─</div>
-          <input id="tr-ia-txt" class="form-input" placeholder="手動輸入物品名稱">
+          <input id="tr-iat" class="fi" placeholder="手動輸入物品名稱">
         </div>
       </div>
     </div>
-    <div class="form-section">
-      <div class="form-section-title">成員 B</div>
-      <div class="form-row"><div class="form-label">成員</div><div class="form-input-box"><select id="tr-mb" class="form-select"><option value="">-- 選擇 --</option></select></div></div>
-      <div class="form-row">
-        <div class="form-label">交換物品 B</div>
-        <div class="combo-wrap">
-          <select id="tr-ib-sel" class="form-select" onchange="onIBSel()"><option value="">-- 從清單選擇 --</option></select>
+    <div class="fs">
+      <div class="fst">成員 B</div>
+      <div class="fr"><div class="fl">成員</div><div class="fb"><select id="tr-mb" class="fse"><option value="">-- 選擇 --</option></select></div></div>
+      <div class="fr"><div class="fl">交換物品 B</div>
+        <div class="combo">
+          <select id="tr-ibs" class="fse" onchange="onIBS()"><option value="">-- 從清單選 --</option></select>
           <div class="combo-or">─ 或手動輸入 ─</div>
-          <input id="tr-ib-txt" class="form-input" placeholder="手動輸入物品名稱">
+          <input id="tr-ibt" class="fi" placeholder="手動輸入物品名稱">
         </div>
       </div>
     </div>
-    <div class="form-section">
-      <div class="form-section-title">備註</div>
-      <div class="form-row"><div class="form-input-box"><input id="tr-note" class="form-input" placeholder="選填備註…"></div></div>
-    </div>
-    <button class="del-big-btn" id="trDelBtn" style="display:none" onclick="delTrEdit()">刪除此紀錄</button>
+    <div class="fs"><div class="fst">備註</div><div class="fr"><div class="fb"><input id="tr-nt" class="fi" placeholder="選填備註…"></div></div></div>
+    <button class="dbd" id="trDelB" style="display:none" onclick="delTr()">刪除此紀錄</button>
   </div>
 </div>
 
 <!-- Member Maint -->
-<div class="det-page det-page-sub" id="pg-maMember">
-  <div class="det-nav">
-    <button class="det-nav-back" onclick="closePanel('pg-maMember')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button>
-    <h2>成員維護</h2>
-  </div>
-  <div style="flex-shrink:0;padding:10px 14px;background:var(--bg);border-bottom:1px solid var(--bd)">
-    <div class="add-item-row">
-      <input id="newMbInput" placeholder="輸入新成員名稱…" onkeydown="if(event.key==='Enter')addMember()">
-      <button class="add-item-btn" onclick="addMember()">＋ 新增</button>
-    </div>
-  </div>
-  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px" id="mbList"></div>
+<div class="pg-panel pg-sub" id="pp-maMb">
+  <div class="pg-sub-bar"></div>
+  <div class="dn"><button class="dbk" onclick="cp('pp-maMb')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button><h2>成員維護</h2></div>
+  <div class="mbar"><input class="mii" id="nMb" placeholder="輸入新成員名稱…" onkeydown="if(event.key==='Enter')addMb()"><button class="mab" onclick="addMb()">＋ 新增</button></div>
+  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:13px" id="mbL"></div>
 </div>
 
 <!-- Album Maint -->
-<div class="det-page det-page-sub" id="pg-maAlbum">
-  <div class="det-nav">
-    <button class="det-nav-back" onclick="closePanel('pg-maAlbum')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button>
-    <h2>相冊維護</h2>
-  </div>
-  <div style="flex-shrink:0;padding:10px 14px;background:var(--bg);border-bottom:1px solid var(--bd)">
-    <div class="add-item-row">
-      <input id="newAlInput" placeholder="輸入相冊名稱…" onkeydown="if(event.key==='Enter')addAlbum()">
-      <button class="add-item-btn" onclick="addAlbum()">＋ 新增</button>
-    </div>
-  </div>
-  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px" id="alList"></div>
+<div class="pg-panel pg-sub" id="pp-maAl">
+  <div class="pg-sub-bar"></div>
+  <div class="dn"><button class="dbk" onclick="cp('pp-maAl')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button><h2>相冊維護</h2></div>
+  <div class="mbar"><input class="mii" id="nAl" placeholder="輸入相冊名稱…" onkeydown="if(event.key==='Enter')addAl()"><button class="mab" onclick="addAl()">＋ 新增</button></div>
+  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:13px" id="alL"></div>
 </div>
 
 <!-- Event Maint List -->
-<div class="det-page det-page-sub" id="pg-maEventList">
-  <div class="det-nav">
-    <button class="det-nav-back" onclick="closePanel('pg-maEventList')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button>
-    <h2>活動維護</h2>
-  </div>
-  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px" id="maEvList"></div>
+<div class="pg-panel pg-sub" id="pp-maEvL">
+  <div class="pg-sub-bar"></div>
+  <div class="dn"><button class="dbk" onclick="cp('pp-maEvL')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button><h2>活動維護</h2></div>
+  <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:13px" id="maEvL"></div>
 </div>
 
 <!-- Event Full Edit (in maint) -->
-<div class="det-page det-page-sub" id="pg-maEventEdit">
-  <div class="det-nav">
-    <button class="det-nav-back" onclick="closePanel('pg-maEventEdit')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button>
-    <h2 id="maEvEditTitle">編輯活動</h2>
-    <button class="det-nav-save" onclick="saveMaEvEdit()">儲存</button>
-  </div>
-  <div class="det-scroll">
-    <div class="form-section">
-      <div class="form-section-title">活動資訊</div>
-      <div class="form-row"><div class="form-label">活動名稱</div><div class="form-input-box"><input id="mev-name" class="form-input" placeholder="活動名稱"></div></div>
-      <div class="form-row-2">
-        <div><div class="form-label">開始日期</div><div class="form-input-box"><input id="mev-start" class="form-input" type="date"></div></div>
-        <div><div class="form-label">結束日期</div><div class="form-input-box"><input id="mev-end" class="form-input" type="date"></div></div>
-      </div>
+<div class="pg-panel pg-sub" id="pp-maEvEd">
+  <div class="pg-sub-bar"></div>
+  <div class="dn"><button class="dbk" onclick="cp('pp-maEvEd')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button><h2 id="maEvT">編輯活動</h2><button class="dsav" onclick="saveMaEv()">儲存</button></div>
+  <div class="dsc">
+    <div class="fs">
+      <div class="fst">活動資訊</div>
+      <div class="fr"><div class="fl">活動名稱</div><div class="fb"><input id="mev-nm" class="fi" placeholder="活動名稱"></div></div>
+      <div class="fr2"><div><div class="fl">開始日期</div><div class="fb"><input id="mev-s" class="fi" type="date"></div></div><div><div class="fl">結束日期</div><div class="fb"><input id="mev-e" class="fi" type="date"></div></div></div>
     </div>
-    <div class="form-section">
-      <div class="form-section-title">連結相冊</div>
-      <div style="padding:10px 15px" id="albBind"></div>
-    </div>
-    <button class="del-big-btn" id="maEvDelBtn" style="display:none" onclick="delMaEvEdit()">刪除此活動</button>
+    <div class="fs"><div class="fst">連結相冊</div><div style="padding:9px 13px" id="albB"></div></div>
+    <button class="dbd" id="maEvDelB" style="display:none" onclick="delMaEv()">刪除此活動</button>
   </div>
 </div>
 
-<!-- Loading & Toast -->
-<div id="loadingOverlay"><div class="spinner"></div><div style="font-size:13px;color:var(--tx2)">載入中…</div></div>
+<div id="lov"><div class="spin"></div><div style="font-size:12px;color:var(--tx2)">載入中…</div></div>
 <div id="toast"></div>
 
 <script>
-// ── Compatibility helpers ──
-function pad2(n){return n<10?'0'+n:String(n);}
-function fmtDateTime(d){
-  return d.getFullYear()+'/'+pad2(d.getMonth()+1)+'/'+pad2(d.getDate())+' '+pad2(d.getHours())+':'+pad2(d.getMinutes());
-}
-// 確保日期值為 "yyyy-MM-dd" 格式（input[type=date] 需要）
-function safeDate(v){
-  if(!v)return'';
-  var s=String(v).trim();
-  // 已經是 yyyy-MM-dd 格式
-  if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s;
-  // 嘗試解析其他格式
-  var d=new Date(s);
-  if(isNaN(d.getTime()))return'';
-  return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());
-}
-var API='https://script.google.com/macros/s/AKfycbzJSm_7k5RCI__5zehjIv7swtbxioee_4BGfjzD7QV7Ig0yQq_BBJrIc8QZpVrni5jO/exec';
+'use strict';
+// ══════════════════════════════════════════════════════════
+//  巡夢貼紙-泛彼柏舟 管理系統
+//  ES5 + XMLHttpRequest - 相容 iOS Safari 11+, Android 5+
+// ══════════════════════════════════════════════════════════
+var API = 'https://script.google.com/macros/s/AKfycbzJSm_7k5RCI__5zehjIv7swtbxioee_4BGfjzD7QV7Ig0yQq_BBJrIc8QZpVrni5jO/exec';
 
-// ── State ──
-var E=[],IT=[],MB=[],AL=[],GR=[],TR=[];
-var curEvFilter=null,detEvId=null,curCat='all';
-var editEvId=null,editItId=null,editGrId=null,editTrId=null,editMaEvId=null;
-var itStars=0,unownedSet,extraSet;
-var isSyncing=false,trFilter=null,grFilter=null;
-
-// ── Utils ──
-function $(id){return document.getElementById(id);}
-function sf(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function showToast(m,d){
-  d=d||2600;
-  var e=$('toast');e.textContent=m;
-  e.classList.add('show');
-  setTimeout(function(){e.classList.remove('show');},d);
+// ── helpers ──
+function pad2(n){return n < 10 ? '0' + n : String(n);}
+function fmtDT(d){
+  return d.getFullYear() + '/' + pad2(d.getMonth()+1) + '/' + pad2(d.getDate())
+    + ' ' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
 }
-function showLoading(v){$('loadingOverlay').classList.toggle('show',v);}
-function setSyncState(s){
-  var d=$('syncDot'),l=$('syncLabel'),t=$('syncTime');
-  if(d)d.className='sync-dot'+(s==='syncing'?' syncing':s==='error'?' error':'');
-  if(l)l.textContent=s==='syncing'?'同步中…':s==='error'?'同步失敗':'已同步';
-  if(s==='ok'&&t){t.textContent=fmtDateTime(new Date());}
+function toInputDate(v){
+  // 轉為 input[type=date] 需要的 yyyy-MM-dd
+  if(!v) return '';
+  var s = String(v).replace(/^\s+|\s+$/g,'');
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  var d = new Date(s);
+  if(isNaN(d.getTime())) return '';
+  return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate());
 }
+function todayS(){return new Date().toISOString().slice(0,10);}
 function parseArr(v){
-  if(Array.isArray(v))return v;
-  try{var r=JSON.parse(v||'[]');return Array.isArray(r)?r:[];}catch(e){return[];}
+  if(Array.isArray(v)) return v;
+  try{var r=JSON.parse(v||'[]');return Array.isArray(r)?r:[];}catch(e){return [];}
 }
-function todayStr(){return new Date().toISOString().slice(0,10);}
-function lsSet(k,v){try{localStorage.setItem('fl_'+k,JSON.stringify(v));}catch(e){}}
-function lsGet(k){try{var s=localStorage.getItem('fl_'+k);return s?JSON.parse(s):null;}catch(e){return null;}}
-function openPanel(id){$(id).classList.add('open');}
-function closePanel(id){$(id).classList.remove('open');}
+function sf(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function $(id){return document.getElementById(id);}
 
-// ── Show Page (tab switching) ──
-function showPage(pageId){
-  // Close all slide panels first
-  var panels=document.querySelectorAll('.det-page');
-  for(var i=0;i<panels.length;i++)panels[i].classList.remove('open');
-  // Switch page
-  var pages=document.querySelectorAll('.page');
-  for(var i=0;i<pages.length;i++)pages[i].classList.remove('active');
-  var tabs=document.querySelectorAll('.tab-btn');
-  for(var i=0;i<tabs.length;i++)tabs[i].classList.remove('active');
-  $(pageId).classList.add('active');
-  var tabId='tab-'+pageId.replace('page-','');
-  var tabEl=$(tabId);
-  if(tabEl)tabEl.classList.add('active');
-  if(pageId==='page-tr')renderCal();
+// ── toast / loading ──
+function toast(m,d){
+  var e=$('toast'); e.textContent=m;
+  e.classList.add('show');
+  setTimeout(function(){e.classList.remove('show');}, d||2600);
+}
+function ld(v){$('lov').classList.toggle('show',v);}
+function setSS(s){
+  var dot=$('sdot'),lbl=$('slbl'),tm=$('stm');
+  if(dot){
+    if(s==='syncing')dot.className='sdot sy';
+    else if(s==='error')dot.className='sdot er';
+    else dot.className='sdot';
+  }
+  if(lbl) lbl.textContent = s==='syncing' ? '同步中…' : s==='error' ? '同步失敗' : '已同步';
+  if(tm && s==='ok') tm.textContent = fmtDT(new Date());
 }
 
-// ── API ──
-function apiCall(action,payload,cb){
-  var p=payload?encodeURIComponent(JSON.stringify(payload)):encodeURIComponent('{}');
-  var url=API+'?action='+encodeURIComponent(action)+'&p='+p+'&_='+Date.now();
-  var xhr=new XMLHttpRequest();
-  xhr.open('GET',url,true);
-  xhr.timeout=30000;
-  xhr.withCredentials=false;
-  xhr.onload=function(){
-    if(xhr.status===200){
+// ── state ──
+var E=[],IT=[],MB=[],AL=[],GR=[],TR=[];
+var evF=null,dtEvId=null,curCat='all';
+var eEvId=null,eItId=null,eGrId=null,eTrId=null,eMaEvId=null;
+var itSt=0,unS={},exS={};
+var syncing=false,trF=null,grF=null;
+
+// ── localStorage ──
+function lsS(k,v){try{localStorage.setItem('xm_'+k,JSON.stringify(v));}catch(e){}}
+function lsG(k){try{var s=localStorage.getItem('xm_'+k);return s?JSON.parse(s):null;}catch(e){return null;}}
+function defMB(){
+  var ns=['天天','沉雪','靜怡','蕾','依依','非心','柔'];
+  var cs=['#ec4899','#3b82f6','#22c55e','#a855f7','#f97316','#eab308','#0ea5e9'];
+  var r=[];for(var i=0;i<ns.length;i++)r.push({id:'m'+i,name:ns[i],color:cs[i]});
+  return r;
+}
+function loadCache(){
+  E=lsG('ev')||[];
+  var raw=lsG('it')||[];
+  IT=[];
+  for(var i=0;i<raw.length;i++){
+    var it=raw[i];
+    IT.push({id:it.id,eventId:it.eventId,name:it.name,albumId:it.albumId,
+      stars:it.stars,owned:parseArr(it.owned),extra:parseArr(it.extra)});
+  }
+  MB=lsG('mb')||defMB();
+  AL=lsG('al')||[];
+  GR=lsG('gr')||[];
+  TR=lsG('tr')||[];
+}
+function saveCache(){
+  var its=[];
+  for(var i=0;i<IT.length;i++){
+    var it=IT[i];
+    its.push({id:it.id,eventId:it.eventId,name:it.name,albumId:it.albumId,
+      stars:it.stars,owned:JSON.stringify(it.owned||[]),extra:JSON.stringify(it.extra||[])});
+  }
+  lsS('ev',E);lsS('it',its);lsS('mb',MB);lsS('al',AL);lsS('gr',GR);lsS('tr',TR);
+}
+
+// ── API via XMLHttpRequest ──
+function apiXHR(action, payload, cb){
+  var pStr = payload ? JSON.stringify(payload) : '{}';
+  var url = API
+    + '?action=' + encodeURIComponent(action)
+    + '&p=' + encodeURIComponent(pStr)
+    + '&t=' + Date.now();
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', url, true);
+  xhr.timeout = 30000;
+  xhr.withCredentials = false;
+  xhr.onreadystatechange = function(){
+    if(xhr.readyState !== 4) return;
+    if(xhr.status === 200){
       try{
-        var j=JSON.parse(xhr.responseText);
-        if(j.ok)cb(null,j.data);
-        else cb(new Error(j.error||action+' failed'));
-      }catch(e){cb(new Error('Response parse error: '+xhr.responseText.slice(0,100)));}
-    }else{cb(new Error('HTTP '+xhr.status));}
+        var j = JSON.parse(xhr.responseText);
+        if(j.ok) cb(null, j.data);
+        else cb(new Error(j.error || action + ' failed'));
+      }catch(e){
+        cb(new Error('解析錯誤'));
+      }
+    } else if(xhr.status === 0){
+      cb(new Error('網路無法連線，請確認網路'));
+    } else {
+      cb(new Error('HTTP ' + xhr.status));
+    }
   };
-  xhr.onerror=function(){cb(new Error('網路錯誤，請檢查連線'));};
-  xhr.ontimeout=function(){cb(new Error('請求逾時，請重試'));};
+  xhr.ontimeout = function(){cb(new Error('請求逾時，請重試'));};
   xhr.send();
 }
 
-// ── Cache ──
-function defMembers(){
-  var names=['天天','沉雪','靜怡','蕾','依依','非心','柔'];
-  var cols=['#ec4899','#3b82f6','#22c55e','#a855f7','#f97316','#eab308','#0ea5e9'];
-  return names.map(function(n,i){return{id:'m'+i,name:n,color:cols[i]};});
-}
-function loadCache(){
-  E=lsGet('ev')||[];
-  var rawIT=lsGet('it')||[];
-  IT=rawIT.map(function(it){return Object.assign({},it,{owned:parseArr(it.owned),extra:parseArr(it.extra)});});
-  MB=lsGet('mb')||defMembers();
-  AL=lsGet('al')||[];
-  GR=lsGet('gr')||[];
-  TR=lsGet('tr')||[];
-}
-function saveCache(){
-  var its=IT.map(function(it){return Object.assign({},it,{owned:JSON.stringify(it.owned||[]),extra:JSON.stringify(it.extra||[])});});
-  lsSet('ev',E);lsSet('it',its);lsSet('mb',MB);lsSet('al',AL);lsSet('gr',GR);lsSet('tr',TR);
-}
-
-// ── Fetch All ──
+// ── fetch all ──
 function fetchAll(cb){
-  setSyncState('syncing');
-  apiCall('getAll',null,function(err,d){
+  setSS('syncing');
+  apiXHR('getAll', null, function(err, d){
     if(err){
-      setSyncState('error');
-      showToast('⚠ 同步失敗：'+err.message,4000);
-      if(cb)cb(false);
+      setSS('error');
+      toast('⚠ ' + err.message, 4000);
+      if(cb) cb(false);
       return;
     }
-    E=d.events||[];
-    IT=(d.items||[]).map(function(it){
-      return Object.assign({},it,{
-        owned:parseArr(it.owned),
-        extra:parseArr(it.extra)
-      });
-    });
-    MB=(d.members&&d.members.length)?d.members:defMembers();
-    AL=d.albums||[];
-    GR=d.grad||[];
-    TR=d.trades||[];
+    E = d.events || [];
+    var raw = d.items || [];
+    IT = [];
+    for(var i=0;i<raw.length;i++){
+      var it=raw[i];
+      IT.push({id:it.id,eventId:it.eventId,name:it.name,albumId:it.albumId,
+        stars:it.stars,owned:parseArr(it.owned),extra:parseArr(it.extra)});
+    }
+    MB = (d.members && d.members.length) ? d.members : defMB();
+    AL = d.albums || [];
+    GR = d.grad || [];
+    TR = d.trades || [];
     saveCache();
-    setSyncState('ok');
-    if(cb)cb(true);
+    setSS('ok');
+    if(cb) cb(true);
   });
 }
-function manualSync(){
-  if(isSyncing)return;isSyncing=true;showLoading(true);
-  fetchAll(function(){showLoading(false);isSyncing=false;renderAll();showToast('✓ 資料已同步');});
+function doSync(){
+  if(syncing) return;
+  syncing = true;
+  ld(true);
+  fetchAll(function(){
+    ld(false);
+    syncing = false;
+    renderAll();
+    toast('✓ 資料已同步');
+  });
 }
 function startApp(){
   loadCache();
   renderAll();
-  showLoading(false);
-  // Background sync - don't block UI
-  setTimeout(function(){
-    fetchAll(function(ok){if(ok)renderAll();});
-  },100);
+  ld(false);
+  // 自動同步
+  fetchAll(function(ok){if(ok) renderAll();});
 }
-function renderAll(){rEv();rGr();renderCal();updateSetCounts();refreshAllSelects();}
+function renderAll(){rEv();rGr();renderCal();updSC();refreshSels();}
 
-// ═══ PAGE 1: EVENTS ═══
+// ── panel helpers ──
+function op(id){$(id).classList.add('open');}
+function cp(id){$(id).classList.remove('open');}
+function cpAll(){
+  var ps=document.querySelectorAll('.pg-panel');
+  for(var i=0;i<ps.length;i++) ps[i].classList.remove('open');
+}
+
+// ── tab ──
+function goPage(tab){
+  cpAll();
+  var pgs=document.querySelectorAll('.page');
+  for(var i=0;i<pgs.length;i++) pgs[i].classList.remove('active');
+  var tbs=document.querySelectorAll('.tb');
+  for(var i=0;i<tbs.length;i++) tbs[i].classList.remove('on');
+  $('pg-'+tab).classList.add('active');
+  var tb=$('tb-'+tab);
+  if(tb) tb.classList.add('on');
+  if(tab==='tr') renderCal();
+}
+
+// ══ PAGE 1: EVENTS ══
 function rEv(){
-  var pills=$('evPills');
-  var html='<div class="pill'+(curEvFilter===null?' active':'')+'" onclick="setEvFilter(null)">全部</div>';
-  E.forEach(function(ev){html+='<div class="pill'+(curEvFilter===ev.id?' active':'')+'" onclick="setEvFilter(\''+ev.id+'\')">'+sf(ev.name)+'</div>';});
-  pills.innerHTML=html;
-  var shown=curEvFilter?E.filter(function(e){return e.id===curEvFilter;}):E;
-  var el=$('evList');
-  if(!shown.length){el.innerHTML='<div class="empty-state"><svg viewBox="0 0 24 24"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg><p>尚無活動<br>點右上角「＋」建立</p></div>';return;}
+  var p=$('evP');
+  var h='<div class="pill'+(evF===null?' on':'')+'" onclick="setEF(null)">全部</div>';
+  for(var i=0;i<E.length;i++) h+='<div class="pill'+(evF===E[i].id?' on':'')+'" onclick="setEF(\''+E[i].id+'\')">'+sf(E[i].name)+'</div>';
+  p.innerHTML=h;
+  var shown=evF?E.filter(function(e){return e.id===evF;}):E;
+  var el=$('evL');
+  if(!shown.length){
+    el.innerHTML='<div class="em"><svg viewBox="0 0 24 24"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg><p>尚無活動<br>點右上角「＋」建立</p></div>';
+    return;
+  }
   var out='';
-  shown.forEach(function(ev){
-    var eit=IT.filter(function(it){return it.eventId===ev.id;});
+  for(var i=0;i<shown.length;i++){
+    var ev=shown[i];
+    var eit=IT.filter(function(x){return x.eventId===ev.id;});
     var ds=ev.startDate?(ev.startDate+(ev.endDate?' → '+ev.endDate:'')):'未設定時間';
     var chips='';
-    MB.forEach(function(m){
-      var c=eit.filter(function(it){return(it.owned||[]).indexOf(m.name)>=0;}).length;
-      chips+='<span style="font-size:11px;padding:2px 7px;border-radius:99px;background:'+m.color+'20;color:'+m.color+';font-weight:700">'+sf(m.name)+' '+c+'</span>';
-    });
-    out+='<div class="rec-card" onclick="openEvDetail(\''+ev.id+'\')">'
-      +'<div class="rec-card-top">'
-      +'<div class="rec-card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg></div>'
-      +'<div class="rec-card-info"><div class="rec-card-title">'+sf(ev.name)+'</div><div class="rec-card-sub">'+sf(ds)+' · '+eit.length+' 件</div></div>'
-      +'<button onclick="event.stopPropagation();openEvEdit(\''+ev.id+'\')" style="flex-shrink:0;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer;color:var(--tx2)">編輯</button>'
-      +'</div>'
-      +'<div class="rec-card-bottom"><div style="display:flex;flex-wrap:wrap;gap:4px">'+chips+'</div><span class="tag tag-rose">'+eit.length+' 件</span></div>'
-      +'</div>';
-  });
+    for(var j=0;j<MB.length;j++){
+      var m=MB[j];
+      var cnt=eit.filter(function(x){return(x.owned||[]).indexOf(m.name)>=0;}).length;
+      chips+='<span style="font-size:11px;padding:2px 7px;border-radius:99px;background:'+m.color+'20;color:'+m.color+';font-weight:700">'+sf(m.name)+' '+cnt+'</span>';
+    }
+    out+='<div class="rc" onclick="openEvDt(\''+ev.id+'\')"><div class="rct">'
+      +'<div class="rci"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg></div>'
+      +'<div class="rcn"><div class="rctit">'+sf(ev.name)+'</div><div class="rcsub">'+sf(ds)+' · '+eit.length+' 件</div></div>'
+      +'<button onclick="event.stopPropagation();openEvEdit(\''+ev.id+'\')" style="flex-shrink:0;background:var(--sf2);border:1px solid var(--bd);border-radius:7px;padding:4px 9px;font-size:11px;cursor:pointer;color:var(--tx2)">編輯</button>'
+      +'</div><div class="rcb"><div style="display:flex;flex-wrap:wrap;gap:3px">'+chips+'</div><span class="tag tr">'+eit.length+' 件</span></div></div>';
+  }
   el.innerHTML=out;
 }
-function setEvFilter(id){curEvFilter=id;rEv();}
-
+function setEF(id){evF=id;rEv();}
 function openEvEdit(id){
-  editEvId=id;
+  eEvId=id;
   var ev=id?E.filter(function(e){return e.id===id;})[0]:null;
-  $('evEditTitle').textContent=ev?'編輯活動':'新增活動';
-  $('ev-name').value=ev?ev.name:'';
-  $('ev-start').value=ev?safeDate(ev.startDate):'';
-  $('ev-end').value=ev?safeDate(ev.endDate):'';
-  $('evDelBtn').style.display=ev?'block':'none';
-  openPanel('pg-evEdit');
+  $('evEdT').textContent=ev?'編輯活動':'新增活動';
+  $('ev-nm').value=ev?ev.name:'';
+  $('ev-s').value=ev?toInputDate(ev.startDate):'';
+  $('ev-e').value=ev?toInputDate(ev.endDate):'';
+  $('evDelB').style.display=ev?'block':'none';
+  op('pp-evEd');
 }
-function saveEvEdit(){
-  var name=$('ev-name').value.trim();if(!name){showToast('請輸入活動名稱');return;}
-  var payload={name:name,startDate:$('ev-start').value,endDate:$('ev-end').value};
-  if(editEvId)payload.id=editEvId;
-  showLoading(true);
-  apiCall('saveEvent',payload,function(err,r){
-    if(err){showLoading(false);showToast('❌ '+err.message);return;}
-    if(!editEvId){
-      E.push({id:r.id,name:payload.name,startDate:payload.startDate,endDate:payload.endDate,albums:[]});
+function saveEv(){
+  var nm=$('ev-nm').value.replace(/^\s+|\s+$/g,'');
+  if(!nm){toast('請輸入活動名稱');return;}
+  var pay={name:nm,startDate:$('ev-s').value,endDate:$('ev-e').value};
+  if(eEvId) pay.id=eEvId;
+  ld(true);
+  apiXHR('saveEvent',pay,function(err,r){
+    ld(false);
+    if(err){toast('❌ '+err.message);return;}
+    if(!eEvId){
+      E.push({id:r.id,name:pay.name,startDate:pay.startDate,endDate:pay.endDate,albums:[]});
     }else{
-      var ev=E.filter(function(e){return e.id===editEvId;})[0];
-      if(ev){ev.name=payload.name;ev.startDate=payload.startDate;ev.endDate=payload.endDate;}
+      var ev=E.filter(function(e){return e.id===eEvId;})[0];
+      if(ev){ev.name=pay.name;ev.startDate=pay.startDate;ev.endDate=pay.endDate;}
     }
-    saveCache();closePanel('pg-evEdit');renderAll();showLoading(false);showToast('✓ 活動已儲存');
+    saveCache();cp('pp-evEd');renderAll();toast('✓ 活動已儲存');
   });
 }
-function delEvEdit(){
-  if(!confirm('確定刪除此活動？底下物品也會一起刪除。'))return;
-  showLoading(true);
-  apiCall('deleteEvent',{id:editEvId},function(err){
-    if(err){showLoading(false);showToast('❌ '+err.message);return;}
-    E=E.filter(function(e){return e.id!==editEvId;});
-    IT=IT.filter(function(i){return i.eventId!==editEvId;});
-    saveCache();closePanel('pg-evEdit');renderAll();showLoading(false);showToast('✓ 已刪除');
+function delEv(){
+  if(!confirm('確定刪除此活動？底下物品也會一起刪除。')) return;
+  ld(true);
+  apiXHR('deleteEvent',{id:eEvId},function(err){
+    ld(false);
+    if(err){toast('❌ '+err.message);return;}
+    E=E.filter(function(e){return e.id!==eEvId;});
+    IT=IT.filter(function(x){return x.eventId!==eEvId;});
+    saveCache();cp('pp-evEd');renderAll();toast('✓ 已刪除');
   });
 }
-
-function openEvDetail(id){
-  detEvId=id;curCat='all';
+function openEvDt(id){
+  dtEvId=id;curCat='all';
   var ev=E.filter(function(e){return e.id===id;})[0];
-  $('evDetailTitle').textContent=ev?ev.name:'物品列表';
-  $('evDetailInfo').textContent=ev&&ev.startDate?(ev.startDate+(ev.endDate?' → '+ev.endDate:'')):'';
-  var tabs=document.querySelectorAll('.cat-tab');
-  for(var i=0;i<tabs.length;i++)tabs[i].classList.toggle('active',tabs[i].dataset.cat==='all');
-  rItems();openPanel('pg-evDetail');
+  $('dtTit').textContent=ev?ev.name:'物品列表';
+  $('dtInf').textContent=ev&&ev.startDate?(ev.startDate+(ev.endDate?' → '+ev.endDate:'')):'';
+  var tabs=document.querySelectorAll('.ctab');
+  for(var i=0;i<tabs.length;i++) tabs[i].classList.toggle('on',tabs[i].getAttribute('data-c')==='all');
+  rItems();op('pp-evDt');
 }
 function setCat(c){
   curCat=c;
-  var tabs=document.querySelectorAll('.cat-tab');
-  for(var i=0;i<tabs.length;i++)tabs[i].classList.toggle('active',tabs[i].dataset.cat===c);
+  var tabs=document.querySelectorAll('.ctab');
+  for(var i=0;i<tabs.length;i++) tabs[i].classList.toggle('on',tabs[i].getAttribute('data-c')===c);
   rItems();
 }
 function rItems(){
-  var its=IT.filter(function(it){return it.eventId===detEvId;});
-  if(curCat==='owned')its=its.filter(function(it){return(it.owned||[]).length>0;});
-  else if(curCat==='unowned')its=its.filter(function(it){return(it.owned||[]).length<MB.length;});
-  else if(curCat==='extra')its=its.filter(function(it){return(it.extra||[]).length>0;});
-  var el=$('itemList');
-  if(!its.length){el.innerHTML='<div class="empty-state"><svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h5l3 3v5h-8V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg><p>此分類無物品</p></div>';return;}
+  var its=IT.filter(function(x){return x.eventId===dtEvId;});
+  if(curCat==='owned') its=its.filter(function(x){return(x.owned||[]).length>0;});
+  else if(curCat==='unowned') its=its.filter(function(x){return(x.owned||[]).length<MB.length;});
+  else if(curCat==='extra') its=its.filter(function(x){return(x.extra||[]).length>0;});
+  var el=$('itL');
+  if(!its.length){el.innerHTML='<div class="em"><svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h5l3 3v5h-8V8z"/></svg><p>此分類無物品</p></div>';return;}
   var out='';
-  its.forEach(function(it){
+  for(var i=0;i<its.length;i++){
+    var it=its[i];
     var alb=AL.filter(function(a){return a.id===it.albumId;})[0];
     var st=Number(it.stars)||0;
-    var stars=st?Array(st+1).join('★'):'';
+    var stars=st?new Array(st+1).join('★'):'';
     var owned=(it.owned||[]).join('、');
     var extra=(it.extra||[]).join('、');
     var unowned=MB.filter(function(m){return(it.owned||[]).indexOf(m.name)<0;}).map(function(m){return m.name;}).join('、');
-    out+='<div class="item-row" onclick="openItEdit(\''+it.id+'\')">'
-      +'<div style="flex:1;min-width:0">'
-      +'<div class="item-name">'+sf(it.name)+(stars?' <span style="color:var(--amber);font-size:11px">'+stars+'</span>':'')+'</div>'
-      +'<div class="item-sub">'+(alb?sf(alb.name)+' · ':'')+'已：'+(owned||'無')+'</div>'
-      +(unowned?'<div class="item-sub" style="color:var(--red-tx)">未：'+sf(unowned)+'</div>':'')
-      +(extra?'<div class="item-sub" style="color:var(--amber-tx)">多：'+sf(extra)+'</div>':'')
-      +'</div>'
-      +'<span class="item-badge">'+((it.owned||[]).length)+'/'+MB.length+'</span>'
-      +'</div>';
-  });
+    out+='<div class="ir" onclick="openItEdit(\''+it.id+'\')"><div style="flex:1;min-width:0">'
+      +'<div class="inn">'+sf(it.name)+(stars?' <span style="color:var(--amber);font-size:10px">'+stars+'</span>':'')+'</div>'
+      +'<div class="isb">'+(alb?sf(alb.name)+' · ':'')+'已：'+(owned||'無')+'</div>'
+      +(unowned?'<div class="isb" style="color:var(--red-tx)">未：'+sf(unowned)+'</div>':'')
+      +(extra?'<div class="isb" style="color:var(--amber-tx)">多：'+sf(extra)+'</div>':'')
+      +'</div><span class="ibg">'+((it.owned||[]).length)+'/'+MB.length+'</span></div>';
+  }
   el.innerHTML=out;
 }
-
 function openItEdit(id){
-  editItId=id;
-  var it=id?IT.filter(function(i){return i.id===id;})[0]:null;
-  $('itEditTitle').textContent=it?'編輯物品':'新增物品';
-  $('it-name').value=it?it.name:'';
-  $('itDelBtn').style.display=it?'block':'none';
-  var asel=$('it-album');
-  var ahtml='<option value="">-- 不指定 --</option>';
-  AL.forEach(function(a){ahtml+='<option value="'+a.id+'"'+(it&&it.albumId===a.id?' selected':'')+'>'+sf(a.name)+'</option>';});
-  asel.innerHTML=ahtml;
-  itStars=it?Number(it.stars)||0:0;
-  setStar(itStars);
+  eItId=id;
+  var it=id?IT.filter(function(x){return x.id===id;})[0]:null;
+  $('itEdT').textContent=it?'編輯物品':'新增物品';
+  $('it-nm').value=it?it.name:'';
+  $('itDelB').style.display=it?'block':'none';
+  // 相冊：只顯示該活動已連結的相冊（+「不指定」）
+  var evId=it?it.eventId:dtEvId;
+  var ev=E.filter(function(e){return e.id===evId;})[0];
+  var evAlbs=(ev&&Array.isArray(ev.albums))?ev.albums:[];
+  // 如果活動沒綁相冊，顯示所有相冊
+  var alFilter=(evAlbs.length>0)?AL.filter(function(a){return evAlbs.indexOf(a.id)>=0;}):AL;
+  var ah='<option value="">-- 不指定 --</option>';
+  for(var i=0;i<alFilter.length;i++) ah+='<option value="'+alFilter[i].id+'"'+(it&&it.albumId===alFilter[i].id?' selected':'')+'>'+sf(alFilter[i].name)+'</option>';
+  $('it-al').innerHTML=ah;
+  itSt=it?Number(it.stars)||0:0;
+  setStar(itSt);
   var owned=it?parseArr(it.owned):[];
   var extra=it?parseArr(it.extra):[];
-  var allNames=MB.map(function(m){return m.name;});
-  unownedSet={};allNames.forEach(function(n){if(owned.indexOf(n)<0)unownedSet[n]=true;});
-  extraSet={};extra.forEach(function(n){extraSet[n]=true;});
-  renderMemberChecks();
-  openPanel('pg-itEdit');
+  unS={};exS={};
+  for(var i=0;i<MB.length;i++){if(owned.indexOf(MB[i].name)<0) unS[MB[i].name]=true;}
+  for(var i=0;i<extra.length;i++) exS[extra[i]]=true;
+  rMC();
+  op('pp-itEd');
 }
-function renderMemberChecks(){
-  var allNames=MB.map(function(m){return m.name;});
-  var uHtml='',eHtml='';
-  MB.forEach(function(m){
-    uHtml+='<div class="member-chk'+(unownedSet[m.name]?' on':'')+'" onclick="togUnowned(\''+m.name+'\')"><div class="chk-box">✓</div><span class="chk-name">'+sf(m.name)+'</span></div>';
-    eHtml+='<div class="member-chk'+(extraSet[m.name]?' on':'')+'" onclick="togExtra(\''+m.name+'\')"><div class="chk-box">✓</div><span class="chk-name">'+sf(m.name)+'</span></div>';
-  });
-  $('unownedGrid').innerHTML=uHtml;
-  $('extraGrid').innerHTML=eHtml;
-  var owned=allNames.filter(function(n){return!unownedSet[n];});
-  $('ownedDisp').innerHTML=owned.length?owned.map(function(n){return'<span style="padding:2px 8px;border-radius:99px;background:var(--green-bg);color:var(--green-tx);font-size:12px;font-weight:600">'+sf(n)+'</span>';}).join(''):'<span style="font-size:12px;color:var(--tx3)">（無人持有）</span>';
+function rMC(){
+  var uH='',eH='';
+  for(var i=0;i<MB.length;i++){
+    var m=MB[i];
+    uH+='<div class="mc'+(unS[m.name]?' on':'')+'" onclick="togU(\''+m.name+'\')"><div class="mcb">✓</div><span class="mcn">'+sf(m.name)+'</span></div>';
+    eH+='<div class="mc'+(exS[m.name]?' on':'')+'" onclick="togE(\''+m.name+'\')"><div class="mcb">✓</div><span class="mcn">'+sf(m.name)+'</span></div>';
+  }
+  $('unG').innerHTML=uH;$('exG').innerHTML=eH;
+  var ow=MB.filter(function(m){return!unS[m.name];});
+  $('owD').innerHTML=ow.length?ow.map(function(m){return'<span style="padding:2px 8px;border-radius:99px;background:var(--green-bg);color:var(--green-tx);font-size:12px;font-weight:600">'+sf(m.name)+'</span>';}).join(''):'<span style="font-size:12px;color:var(--tx3)">（無人持有）</span>';
 }
-function togUnowned(n){if(unownedSet[n])delete unownedSet[n];else unownedSet[n]=true;renderMemberChecks();}
-function togExtra(n){if(extraSet[n])delete extraSet[n];else extraSet[n]=true;renderMemberChecks();}
+function togU(n){if(unS[n])delete unS[n];else unS[n]=true;rMC();}
+function togE(n){if(exS[n])delete exS[n];else exS[n]=true;rMC();}
 function setStar(n){
-  itStars=n;
-  var btns=document.querySelectorAll('.star-btn');
-  for(var i=0;i<btns.length;i++)btns[i].classList.toggle('on',Number(btns[i].dataset.s)<=n);
+  itSt=n;
+  var bs=document.querySelectorAll('.stbtn');
+  for(var i=0;i<bs.length;i++) bs[i].classList.toggle('on',Number(bs[i].getAttribute('data-s'))<=n);
 }
-function saveItEdit(){
-  var name=$('it-name').value.trim();if(!name){showToast('請輸入物品名稱');return;}
-  var allNames=MB.map(function(m){return m.name;});
-  var owned=allNames.filter(function(n){return!unownedSet[n];});
-  var extra=Object.keys(extraSet);
-  var payload={eventId:detEvId,name:name,albumId:$('it-album').value,stars:itStars||'',owned:owned,extra:extra};
-  if(editItId)payload.id=editItId;
-  showLoading(true);
-  apiCall('saveItem',payload,function(err,r){
-    if(err){showLoading(false);showToast('❌ '+err.message);return;}
-    if(!editItId){
-      IT.push({id:r.id,eventId:payload.eventId,name:payload.name,albumId:payload.albumId,stars:payload.stars,owned:owned,extra:extra});
+function saveIt(){
+  var nm=$('it-nm').value.replace(/^\s+|\s+$/g,'');
+  if(!nm){toast('請輸入物品名稱');return;}
+  var owned=MB.filter(function(m){return!unS[m.name];}).map(function(m){return m.name;});
+  var extra=Object.keys(exS);
+  var pay={eventId:dtEvId,name:nm,albumId:$('it-al').value,stars:itSt||'',owned:owned,extra:extra};
+  if(eItId) pay.id=eItId;
+  ld(true);
+  apiXHR('saveItem',pay,function(err,r){
+    ld(false);
+    if(err){toast('❌ '+err.message);return;}
+    if(!eItId){
+      IT.push({id:r.id,eventId:pay.eventId,name:pay.name,albumId:pay.albumId,stars:pay.stars,owned:owned,extra:extra});
     }else{
-      var it=IT.filter(function(i){return i.id===editItId;})[0];
-      if(it){it.name=payload.name;it.albumId=payload.albumId;it.stars=payload.stars;it.owned=owned;it.extra=extra;}
+      var it=IT.filter(function(x){return x.id===eItId;})[0];
+      if(it){it.name=pay.name;it.albumId=pay.albumId;it.stars=pay.stars;it.owned=owned;it.extra=extra;}
     }
-    saveCache();closePanel('pg-itEdit');rItems();rEv();showLoading(false);showToast('✓ 物品已儲存');
+    saveCache();cp('pp-itEd');rItems();rEv();toast('✓ 物品已儲存');
   });
 }
-function delItEdit(){
-  if(!confirm('確定刪除？'))return;showLoading(true);
-  apiCall('deleteItem',{id:editItId},function(err){
-    if(err){showLoading(false);showToast('❌ '+err.message);return;}
-    IT=IT.filter(function(i){return i.id!==editItId;});
-    saveCache();closePanel('pg-itEdit');rItems();rEv();showLoading(false);showToast('✓ 已刪除');
+function delIt(){
+  if(!confirm('確定刪除？')) return;
+  ld(true);
+  apiXHR('deleteItem',{id:eItId},function(err){
+    ld(false);
+    if(err){toast('❌ '+err.message);return;}
+    IT=IT.filter(function(x){return x.id!==eItId;});
+    saveCache();cp('pp-itEd');rItems();rEv();toast('✓ 已刪除');
   });
 }
 
-// ═══ PAGE 2: GRADUATION ═══
+// ══ PAGE 2: GRADUATION ══
 function rGr(){
-  var pills=$('grPills');
-  var html='<div class="pill'+(grFilter===null?' active':'')+'" onclick="setGrFilter(null)">全部</div>';
-  E.forEach(function(ev){html+='<div class="pill'+(grFilter===ev.id?' active':'')+'" onclick="setGrFilter(\''+ev.id+'\')">'+sf(ev.name)+'</div>';});
-  pills.innerHTML=html;
-  var list=grFilter?GR.filter(function(g){return g.eventId===grFilter;}):GR;
-  var el=$('grList');
-  if(!list.length){el.innerHTML='<div class="empty-state"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0112 0v2"/></svg><p>尚無畢業紀錄</p></div>';return;}
+  var p=$('grP');
+  var h='<div class="pill'+(grF===null?' on':'')+'" onclick="setGF(null)">全部</div>';
+  for(var i=0;i<E.length;i++) h+='<div class="pill'+(grF===E[i].id?' on':'')+'" onclick="setGF(\''+E[i].id+'\')">'+sf(E[i].name)+'</div>';
+  p.innerHTML=h;
+  var list=grF?GR.filter(function(g){return g.eventId===grF;}):GR;
+  var el=$('grL');
+  if(!list.length){el.innerHTML='<div class="em"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0112 0v2"/></svg><p>尚無畢業紀錄</p></div>';return;}
   var byEv={};
-  list.forEach(function(g){if(!byEv[g.eventId])byEv[g.eventId]=[];byEv[g.eventId].push(g);});
+  for(var i=0;i<list.length;i++){
+    var g=list[i];
+    if(!byEv[g.eventId]) byEv[g.eventId]=[];
+    byEv[g.eventId].push(g);
+  }
   var out='';
-  Object.keys(byEv).forEach(function(eid){
+  var keys=Object.keys(byEv);
+  for(var i=0;i<keys.length;i++){
+    var eid=keys[i];
     var ev=E.filter(function(e){return e.id===eid;})[0];
     var ds=ev&&ev.startDate?(ev.startDate+(ev.endDate?' → '+ev.endDate:'')):'';
-    out+='<div class="grad-section-title">'+sf(ev?ev.name:eid)+(ds?' · '+ds:'')+'</div>';
-    byEv[eid].forEach(function(g){
+    out+='<div class="gst">'+sf(ev?ev.name:eid)+(ds?' · '+ds:'')+'</div>';
+    var recs=byEv[eid];
+    for(var j=0;j<recs.length;j++){
+      var g=recs[j];
       var m=MB.filter(function(mb){return mb.id===g.memberId||mb.name===g.memberName;})[0];
-      out+='<div class="grad-row" onclick="openGrEdit(\''+g.id+'\')"><div class="grad-avatar" style="background:'+(m?m.color+'20':'var(--accent-bg)')+';color:'+(m?m.color:'var(--accent)')+'">'+sf((g.memberName||'?')[0])+'</div><div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--tx)">'+sf(g.memberName)+'</div><div style="font-size:11px;color:var(--tx3)">畢業：'+sf(g.gradDate||'未設定')+'</div></div><span style="font-size:18px;color:var(--tx3)">›</span></div>';
-    });
-  });
+      out+='<div class="grw" onclick="openGrEdit(\''+g.id+'\')"><div class="gav" style="background:'+(m?m.color+'20':'var(--accent-bg)')+';color:'+(m?m.color:'var(--accent)')+'">'+sf((g.memberName||'?')[0])+'</div><div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--tx)">'+sf(g.memberName)+'</div><div style="font-size:11px;color:var(--tx3)">畢業：'+sf(g.gradDate||'未設定')+'</div></div><span style="font-size:16px;color:var(--tx3)">›</span></div>';
+    }
+  }
   el.innerHTML=out;
 }
-function setGrFilter(id){grFilter=id;rGr();}
+function setGF(id){grF=id;rGr();}
 function openGrEdit(id){
-  editGrId=id;
+  eGrId=id;
   var g=id?GR.filter(function(r){return r.id===id;})[0]:null;
-  $('grEditTitle').textContent=g?'編輯畢業紀錄':'新增畢業紀錄';
-  $('grDelBtn').style.display=g?'block':'none';
+  $('grEdT').textContent=g?'編輯畢業紀錄':'新增畢業紀錄';
+  $('grDelB').style.display=g?'block':'none';
   $('gr-ev').value=g?g.eventId:'';
   $('gr-mb').value=g?g.memberName:'';
-  $('gr-date').value=g?safeDate(g.gradDate):todayStr();
-  onGrEvChange();openPanel('pg-grEdit');
+  $('gr-dt').value=g?toInputDate(g.gradDate):todayS();
+  onGrEv();op('pp-grEd');
 }
-function onGrEvChange(){
+function onGrEv(){
   var ev=E.filter(function(e){return e.id===$('gr-ev').value;})[0];
-  var el=$('gr-ev-info');
+  var el=$('gr-ei');
   if(ev&&ev.startDate){el.textContent=ev.startDate+(ev.endDate?' → '+ev.endDate:'');el.style.display='';}
   else el.style.display='none';
 }
-function saveGrEdit(){
-  var eid=$('gr-ev').value,mv=$('gr-mb').value,date=$('gr-date').value;
-  if(!eid||!mv){showToast('請選擇活動和成員');return;}
+function saveGr(){
+  var eid=$('gr-ev').value,mv=$('gr-mb').value,dt=$('gr-dt').value;
+  if(!eid||!mv){toast('請選擇活動和成員');return;}
   var m=MB.filter(function(mb){return mb.name===mv;})[0];
-  var payload={eventId:eid,memberId:m?m.id:'',memberName:m?m.name:mv,gradDate:date};
-  if(editGrId)payload.id=editGrId;
-  showLoading(true);
-  apiCall('saveGrad',payload,function(err,r){
-    if(err){showLoading(false);showToast('❌ '+err.message);return;}
-    if(!editGrId){
-      GR.push({id:r.id,eventId:payload.eventId,memberId:payload.memberId,memberName:payload.memberName,gradDate:payload.gradDate});
+  var pay={eventId:eid,memberId:m?m.id:'',memberName:m?m.name:mv,gradDate:dt};
+  if(eGrId) pay.id=eGrId;
+  ld(true);
+  apiXHR('saveGrad',pay,function(err,r){
+    ld(false);
+    if(err){toast('❌ '+err.message);return;}
+    if(!eGrId){
+      GR.push({id:r.id,eventId:pay.eventId,memberId:pay.memberId,memberName:pay.memberName,gradDate:pay.gradDate});
     }else{
-      var g=GR.filter(function(g){return g.id===editGrId;})[0];
-      if(g){g.eventId=payload.eventId;g.memberId=payload.memberId;g.memberName=payload.memberName;g.gradDate=payload.gradDate;}
+      var g=GR.filter(function(x){return x.id===eGrId;})[0];
+      if(g){g.eventId=pay.eventId;g.memberId=pay.memberId;g.memberName=pay.memberName;g.gradDate=pay.gradDate;}
     }
-    saveCache();closePanel('pg-grEdit');rGr();showLoading(false);showToast('✓ 畢業紀錄已儲存');
+    saveCache();cp('pp-grEd');rGr();toast('✓ 畢業紀錄已儲存');
   });
 }
-function delGrEdit(){
-  if(!confirm('確定刪除？'))return;showLoading(true);
-  apiCall('deleteGrad',{id:editGrId},function(err){
-    if(err){showLoading(false);showToast('❌ '+err.message);return;}
-    GR=GR.filter(function(g){return g.id!==editGrId;});
-    saveCache();closePanel('pg-grEdit');rGr();showLoading(false);showToast('✓ 已刪除');
+function delGr(){
+  if(!confirm('確定刪除？')) return;
+  ld(true);
+  apiXHR('deleteGrad',{id:eGrId},function(err){
+    ld(false);
+    if(err){toast('❌ '+err.message);return;}
+    GR=GR.filter(function(g){return g.id!==eGrId;});
+    saveCache();cp('pp-grEd');rGr();toast('✓ 已刪除');
   });
 }
 
-// ═══ PAGE 3: TRADE CALENDAR ═══
+// ══ PAGE 3: TRADE CALENDAR ══
 function initCal(){
-  var y=$('calY');if(y.options.length)return;
+  var y=$('calY');if(y.options.length) return;
   var cy=new Date().getFullYear();
   for(var i=cy-1;i<=cy+3;i++){var o=document.createElement('option');o.value=i;o.textContent=i+'年';y.appendChild(o);}
   y.value=cy;$('calM').value=new Date().getMonth()+1;
 }
 function renderCal(){
   initCal();
-  var trP=$('trPills');
-  var html='<div class="pill'+(trFilter===null?' active':'')+'" onclick="setTrFilter(null)">全部活動</div>';
-  E.forEach(function(ev){html+='<div class="pill'+(trFilter===ev.id?' active':'')+'" onclick="setTrFilter(\''+ev.id+'\')">'+sf(ev.name)+'</div>';});
-  trP.innerHTML=html;
+  var p=$('trP');
+  var h='<div class="pill'+(trF===null?' on':'')+'" onclick="setTF(null)">全部活動</div>';
+  for(var i=0;i<E.length;i++) h+='<div class="pill'+(trF===E[i].id?' on':'')+'" onclick="setTF(\''+E[i].id+'\')">'+sf(E[i].name)+'</div>';
+  p.innerHTML=h;
   var y=Number($('calY').value),m=Number($('calM').value);
   var first=new Date(y,m-1,1).getDay(),days=new Date(y,m,0).getDate();
-  var toS=todayStr();
+  var toS=todayS();
   var bd={};
-  TR.forEach(function(t){
-    if(trFilter&&t.eventId!==trFilter)return;
-    if(!t.tradeDate)return;
-    if(!bd[t.tradeDate])bd[t.tradeDate]=[];
+  for(var i=0;i<TR.length;i++){
+    var t=TR[i];
+    if(trF&&t.eventId!==trF) continue;
+    if(!t.tradeDate) continue;
+    if(!bd[t.tradeDate]) bd[t.tradeDate]=[];
     bd[t.tradeDate].push(t);
-  });
-  $('calDow').innerHTML=['日','一','二','三','四','五','六'].map(function(d){return'<div class="cal-dow">'+d+'</div>';}).join('');
+  }
+  $('cald').innerHTML=['日','一','二','三','四','五','六'].map(function(d){return'<div class="dow">'+d+'</div>';}).join('');
   var cs='';
-  for(var i=0;i<first;i++)cs+='<div></div>';
+  for(var i=0;i<first;i++) cs+='<div></div>';
   for(var d=1;d<=days;d++){
-    var ds=y+'-'+(m<10?'0':'')+m+'-'+(d<10?'0':'')+d;
+    var ds=y+'-'+pad2(m)+'-'+pad2(d);
     var tl=bd[ds]||[];
-    cs+='<div class="cal-cell'+(ds===toS?' today':'')+(tl.length?' has-trade':'')+'" onclick="openCalDay(\''+ds+'\')">'
-      +'<div class="cal-cell-num">'+d+'</div>'
-      +(tl.length?'<div class="cal-dots">'+tl.slice(0,4).map(function(){return'<div class="cal-dot"></div>';}).join('')+'</div>':'')
+    cs+='<div class="cc'+(ds===toS?' today':'')+(tl.length?' ht':'')+'" onclick="openCD(\''+ds+'\')">'
+      +'<div class="ccn">'+d+'</div>'
+      +(tl.length?'<div class="cdots">'+tl.slice(0,4).map(function(){return'<div class="cdot"></div>';}).join('')+'</div>':'')
       +'</div>';
   }
-  $('calGrid').innerHTML=cs;
+  $('calg').innerHTML=cs;
 }
-function calShift(d){var m=Number($('calM').value)+d,y=Number($('calY').value);if(m<1){m=12;y--;}else if(m>12){m=1;y++;}$('calM').value=m;$('calY').value=y;renderCal();}
-function setTrFilter(id){trFilter=id;renderCal();}
-function openCalDay(ds){
+function calSh(d){var m=Number($('calM').value)+d,y=Number($('calY').value);if(m<1){m=12;y--;}else if(m>12){m=1;y++;}$('calM').value=m;$('calY').value=y;renderCal();}
+function setTF(id){trF=id;renderCal();}
+function openCD(ds){
   var tl=TR.filter(function(t){return t.tradeDate===ds;});
   var html='<div style="font-weight:700;font-size:14px;color:var(--tx);margin-bottom:10px">'+ds+'</div>';
-  if(!tl.length)html+='<div style="color:var(--tx3);font-size:13px;text-align:center;padding:16px 0">當天無交換紀錄</div>';
-  else tl.forEach(function(t){
+  if(!tl.length) html+='<div style="color:var(--tx3);font-size:13px;text-align:center;padding:14px 0">當天無交換紀錄</div>';
+  else for(var i=0;i<tl.length;i++){
+    var t=tl[i];
     var ev=E.filter(function(e){return e.id===t.eventId;})[0];
-    html+='<div class="trade-card" onclick="document.querySelector(\'.bs-overlay\').remove();openTrEdit(\''+t.id+'\',null)">'
+    html+='<div class="trc" onclick="rmBS();openTrEdit(\''+t.id+'\',null)">'
       +'<div style="font-size:10px;color:var(--tx3);margin-bottom:3px">'+(ev?sf(ev.name):'')+'</div>'
       +'<div style="font-size:14px;font-weight:700;color:var(--tx)">'+sf(t.memberA)+' ⇄ '+sf(t.memberB)+'</div>'
-      +(t.itemA||t.itemB?'<div style="font-size:11px;color:var(--tx2);margin-top:2px">'+sf(t.itemA||'')+(t.itemA&&t.itemB?' / ':'')+sf(t.itemB||'')+'</div>':'')
+      +((t.itemA||t.itemB)?'<div style="font-size:11px;color:var(--tx2);margin-top:2px">'+sf(t.itemA||'')+(t.itemA&&t.itemB?' / ':'')+sf(t.itemB||'')+'</div>':'')
       +(t.note?'<div style="font-size:11px;color:var(--tx3);margin-top:2px">備：'+sf(t.note)+'</div>':'')
       +'</div>';
-  });
-  html+='<button onclick="document.querySelector(\'.bs-overlay\').remove();openTrEdit(null,\''+ds+'\')" style="width:100%;margin-top:10px;padding:11px;border-radius:11px;background:var(--accent);color:#fff;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">＋ 新增 '+ds+' 的交換</button>';
-  showBottomSheet(ds+' 交換紀錄',html);
+  }
+  html+='<button onclick="rmBS();openTrEdit(null,\''+ds+'\')" style="width:100%;margin-top:10px;padding:11px;border-radius:11px;background:var(--accent);color:#fff;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">＋ 新增 '+ds+' 的交換</button>';
+  showBS(ds+' 交換紀錄',html);
 }
-function showBottomSheet(title,body){
-  var ov=document.createElement('div');ov.className='bs-overlay';
-  ov.innerHTML='<div class="bs-wrap"><div class="bs-header"><div class="bs-title">'+sf(title)+'</div><button class="bs-close-btn" onclick="this.closest(\'.bs-overlay\').remove()">✕</button></div><div class="bs-body">'+body+'</div></div>';
-  ov.addEventListener('click',function(e){if(e.target===ov)ov.remove();});
+function rmBS(){var b=document.querySelector('.bso');if(b)b.remove();}
+function showBS(title,body){
+  rmBS();
+  var ov=document.createElement('div');ov.className='bso';
+  ov.innerHTML='<div class="bsw"><div class="bsh"><div class="bst">'+sf(title)+'</div><button class="bsc" onclick="rmBS()">✕</button></div><div class="bsb">'+body+'</div></div>';
+  ov.addEventListener('click',function(e){if(e.target===ov)rmBS();});
   document.body.appendChild(ov);
 }
 function openTrEdit(id,prefill){
-  editTrId=id;
+  eTrId=id;
   var t=id?TR.filter(function(r){return r.id===id;})[0]:null;
-  $('trEditTitle').textContent=t?'編輯交換':'新增交換';
-  $('trDelBtn').style.display=t?'block':'none';
+  $('trEdT').textContent=t?'編輯交換':'新增交換';
+  $('trDelB').style.display=t?'block':'none';
   $('tr-ev').value=t?t.eventId:'';
-  $('tr-date').value=t?safeDate(t.tradeDate):(prefill||todayStr());
+  $('tr-dt').value=t?toInputDate(t.tradeDate):(prefill||todayS());
   $('tr-ma').value=t?t.memberA:'';
   $('tr-mb').value=t?t.memberB:'';
-  $('tr-note').value=t?t.note:'';
-  onTrEvChange();
+  $('tr-nt').value=(t&&t.note)?t.note:'';
+  onTrEv();
   if(t){
+    // 填入物品 A/B（延遲等 select 渲染完）
+    var savedA=t.itemA||'';
+    var savedB=t.itemB||'';
     setTimeout(function(){
-      var selA=$('tr-ia-sel'),selB=$('tr-ib-sel');
-      var optA=null,optB=null;
-      for(var i=0;i<selA.options.length;i++){if(selA.options[i].text===t.itemA){optA=selA.options[i];break;}}
-      for(var i=0;i<selB.options.length;i++){if(selB.options[i].text===t.itemB){optB=selB.options[i];break;}}
-      if(optA){selA.value=optA.value;$('tr-ia-txt').value='';}else{selA.value='';$('tr-ia-txt').value=t.itemA||'';}
-      if(optB){selB.value=optB.value;$('tr-ib-txt').value='';}else{selB.value='';$('tr-ib-txt').value=t.itemB||'';}
+      var sA=$('tr-ias'),sB=$('tr-ibs');
+      var matchA=false,matchB=false;
+      for(var i=0;i<sA.options.length;i++){if(sA.options[i].text===savedA){sA.selectedIndex=i;matchA=true;break;}}
+      if(!matchA){sA.value='';$('tr-iat').value=savedA;}else{$('tr-iat').value='';}
+      for(var i=0;i<sB.options.length;i++){if(sB.options[i].text===savedB){sB.selectedIndex=i;matchB=true;break;}}
+      if(!matchB){sB.value='';$('tr-ibt').value=savedB;}else{$('tr-ibt').value='';}
     },80);
   }else{
-    $('tr-ia-sel').value='';$('tr-ia-txt').value='';
-    $('tr-ib-sel').value='';$('tr-ib-txt').value='';
+    $('tr-ias').value='';$('tr-iat').value='';
+    $('tr-ibs').value='';$('tr-ibt').value='';
   }
-  openPanel('pg-trEdit');
+  op('pp-trEd');
 }
-function onTrEvChange(){
+function onTrEv(){
   var eid=$('tr-ev').value;
-  var its=eid?IT.filter(function(it){return it.eventId===eid;}):IT;
-  var opts='<option value="">-- 從清單選擇 --</option>';
-  its.forEach(function(it){opts+='<option value="'+it.id+'">'+sf(it.name)+'</option>';});
-  $('tr-ia-sel').innerHTML=opts;$('tr-ib-sel').innerHTML=opts;
+  var its=eid?IT.filter(function(x){return x.eventId===eid;}):IT;
+  var opts='<option value="">-- 從清單選 --</option>';
+  for(var i=0;i<its.length;i++) opts+='<option value="'+its[i].id+'">'+sf(its[i].name)+'</option>';
+  $('tr-ias').innerHTML=opts;
+  $('tr-ibs').innerHTML=opts;
 }
-function onIASel(){if($('tr-ia-sel').value)$('tr-ia-txt').value='';}
-function onIBSel(){if($('tr-ib-sel').value)$('tr-ib-txt').value='';}
-function getTrItem(selId,txtId){
-  var txt=$('tr-'+txtId+'-txt').value.trim();if(txt)return txt;
-  var sel=$('tr-'+selId+'-sel');
-  if(sel.value&&sel.selectedIndex>=0)return sel.options[sel.selectedIndex].text;
-  return'';
+function onIAS(){if($('tr-ias').value)$('tr-iat').value='';}
+function onIBS(){if($('tr-ibs').value)$('tr-ibt').value='';}
+function getItName(selId,txtId){
+  var txt=$(txtId).value.replace(/^\s+|\s+$/g,'');if(txt) return txt;
+  var sel=$(selId);
+  if(sel.value&&sel.selectedIndex>0) return sel.options[sel.selectedIndex].text;
+  return '';
 }
-function saveTrEdit(){
-  var date=$('tr-date').value,ma=$('tr-ma').value,mb=$('tr-mb').value;
-  if(!date||!ma||!mb){showToast('請填寫日期和雙方成員');return;}
-  if(ma===mb){showToast('成員 A 和 B 不能相同');return;}
-  var selA=$('tr-ia-sel'),selB=$('tr-ib-sel');
-  var txtA=$('tr-ia-txt').value.trim();
-  var txtB=$('tr-ib-txt').value.trim();
-  var itemA=txtA||(selA.value&&selA.selectedIndex>0?selA.options[selA.selectedIndex].text:'');
-  var itemB=txtB||(selB.value&&selB.selectedIndex>0?selB.options[selB.selectedIndex].text:'');
-  var payload={eventId:$('tr-ev').value,tradeDate:date,memberA:ma,itemA:itemA,memberB:mb,itemB:itemB,note:$('tr-note').value||''};
-  if(editTrId)payload.id=editTrId;
-  showLoading(true);
-  apiCall('saveTrade',payload,function(err,r){
-    if(err){showLoading(false);showToast('❌ '+err.message);return;}
-    if(!editTrId){
-      TR.push({id:r.id,eventId:payload.eventId,tradeDate:payload.tradeDate,
-        memberA:payload.memberA,itemA:payload.itemA,
-        memberB:payload.memberB,itemB:payload.itemB,note:payload.note});
+function saveTr(){
+  var dt=$('tr-dt').value,ma=$('tr-ma').value,mb=$('tr-mb').value;
+  if(!dt||!ma||!mb){toast('請填寫日期和雙方成員');return;}
+  if(ma===mb){toast('成員 A 和 B 不能相同');return;}
+  var itemA=getItName('tr-ias','tr-iat');
+  var itemB=getItName('tr-ibs','tr-ibt');
+  var pay={eventId:$('tr-ev').value,tradeDate:dt,memberA:ma,itemA:itemA,memberB:mb,itemB:itemB,note:$('tr-nt').value||''};
+  if(eTrId) pay.id=eTrId;
+  ld(true);
+  apiXHR('saveTrade',pay,function(err,r){
+    ld(false);
+    if(err){toast('❌ '+err.message);return;}
+    if(!eTrId){
+      TR.push({id:r.id,eventId:pay.eventId,tradeDate:pay.tradeDate,
+        memberA:pay.memberA,itemA:pay.itemA,
+        memberB:pay.memberB,itemB:pay.itemB,note:pay.note});
     }else{
-      var t=TR.filter(function(t){return t.id===editTrId;})[0];
-      if(t){t.eventId=payload.eventId;t.tradeDate=payload.tradeDate;
-        t.memberA=payload.memberA;t.itemA=payload.itemA;
-        t.memberB=payload.memberB;t.itemB=payload.itemB;t.note=payload.note;}
+      var t=TR.filter(function(x){return x.id===eTrId;})[0];
+      if(t){t.eventId=pay.eventId;t.tradeDate=pay.tradeDate;
+        t.memberA=pay.memberA;t.itemA=pay.itemA;
+        t.memberB=pay.memberB;t.itemB=pay.itemB;t.note=pay.note;}
     }
-    saveCache();closePanel('pg-trEdit');renderCal();showLoading(false);showToast('✓ 交換紀錄已儲存');
+    saveCache();cp('pp-trEd');renderCal();toast('✓ 交換紀錄已儲存');
   });
 }
-function delTrEdit(){
-  if(!confirm('確定刪除？'))return;showLoading(true);
-  apiCall('deleteTrade',{id:editTrId},function(err){
-    if(err){showLoading(false);showToast('❌ '+err.message);return;}
-    TR=TR.filter(function(t){return t.id!==editTrId;});
-    saveCache();closePanel('pg-trEdit');renderCal();showLoading(false);showToast('✓ 已刪除');
+function delTr(){
+  if(!confirm('確定刪除？')) return;
+  ld(true);
+  apiXHR('deleteTrade',{id:eTrId},function(err){
+    ld(false);
+    if(err){toast('❌ '+err.message);return;}
+    TR=TR.filter(function(x){return x.id!==eTrId;});
+    saveCache();cp('pp-trEd');renderCal();toast('✓ 已刪除');
   });
 }
 
-// ═══ PAGE 4: SETTINGS ═══
-function updateSetCounts(){
+// ══ PAGE 4: SETTINGS ══
+function updSC(){
   $('sub-mb').textContent='目前 '+MB.length+' 位成員';
   $('sub-al').textContent='目前 '+AL.length+' 個相冊';
   $('sub-ev').textContent='目前 '+E.length+' 個活動';
 }
 function openMaint(t){
-  if(t==='member')renderMbList();
-  else if(t==='album')renderAlList();
-  else if(t==='event')renderMaEvList();
-  var map={member:'pg-maMember',album:'pg-maAlbum',event:'pg-maEventList'};
-  openPanel(map[t]);
+  if(t==='mb') rMbL();
+  else if(t==='al') rAlL();
+  else if(t==='ev') rMaEvL();
+  op({mb:'pp-maMb',al:'pp-maAl',ev:'pp-maEvL'}[t]);
 }
-function renderMbList(){
-  var el=$('mbList');
+function rMbL(){
+  var el=$('mbL');
   if(!MB.length){el.innerHTML='<div style="text-align:center;padding:28px;color:var(--tx3)">尚無成員</div>';return;}
   var out='';
-  MB.forEach(function(m){
-    out+='<div class="maint-item"><div style="width:30px;height:30px;border-radius:7px;background:'+m.color+'20;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:'+m.color+';flex-shrink:0">'+sf(m.name[0])+'</div><span class="maint-item-label">'+sf(m.name)+'</span><button class="del-btn-sm" onclick="delMember(\''+m.id+'\')">刪除</button></div>';
-  });
+  for(var i=0;i<MB.length;i++){
+    var m=MB[i];
+    out+='<div class="mit"><div style="width:28px;height:28px;border-radius:7px;background:'+m.color+'20;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:'+m.color+';flex-shrink:0">'+sf(m.name[0])+'</div><span class="mil">'+sf(m.name)+'</span><button class="dbs" onclick="delMb(\''+m.id+'\')">刪除</button></div>';
+  }
   el.innerHTML=out;
 }
-function addMember(){
-  var inp=$('newMbInput'),name=inp.value.trim();if(!name)return;
-  if(MB.filter(function(m){return m.name===name;}).length){showToast('成員名稱已存在');return;}
-  var cols=['#ec4899','#3b82f6','#22c55e','#a855f7','#f97316','#eab308','#0ea5e9','#ef4444','#8b5cf6','#06b6d4'];
-  var m={id:'m'+Date.now(),name:name,color:cols[MB.length%cols.length]};
-  MB.push(m);showLoading(true);
-  apiCall('saveMembers',MB,function(err){
-    if(err){MB.pop();showLoading(false);showToast('❌ '+err.message);return;}
-    saveCache();inp.value='';renderMbList();updateSetCounts();refreshAllSelects();showLoading(false);showToast('✓ 成員已新增');
+function addMb(){
+  var inp=$('nMb'),nm=inp.value.replace(/^\s+|\s+$/g,'');if(!nm) return;
+  if(MB.filter(function(m){return m.name===nm;}).length){toast('成員名稱已存在');return;}
+  var cs=['#ec4899','#3b82f6','#22c55e','#a855f7','#f97316','#eab308','#0ea5e9','#ef4444','#8b5cf6','#06b6d4'];
+  var m={id:'m'+Date.now(),name:nm,color:cs[MB.length%cs.length]};
+  MB.push(m);ld(true);
+  apiXHR('saveMembers',MB,function(err){
+    ld(false);
+    if(err){MB.pop();toast('❌ '+err.message);return;}
+    saveCache();inp.value='';rMbL();updSC();refreshSels();toast('✓ 成員已新增');
   });
 }
-function delMember(id){
-  if(!confirm('確定刪除此成員？'))return;
-  var orig=MB.slice();MB=MB.filter(function(m){return m.id!==id;});showLoading(true);
-  apiCall('saveMembers',MB,function(err){
-    if(err){MB=orig;renderMbList();showLoading(false);showToast('❌ '+err.message);return;}
-    saveCache();renderMbList();updateSetCounts();refreshAllSelects();showLoading(false);showToast('✓ 已刪除');
+function delMb(id){
+  if(!confirm('確定刪除？')) return;
+  var orig=MB.slice();MB=MB.filter(function(m){return m.id!==id;});ld(true);
+  apiXHR('saveMembers',MB,function(err){
+    ld(false);
+    if(err){MB=orig;rMbL();toast('❌ '+err.message);return;}
+    saveCache();rMbL();updSC();refreshSels();toast('✓ 已刪除');
   });
 }
-function renderAlList(){
-  var el=$('alList');
+function rAlL(){
+  var el=$('alL');
   if(!AL.length){el.innerHTML='<div style="text-align:center;padding:28px;color:var(--tx3)">尚無相冊</div>';return;}
   var out='';
-  AL.forEach(function(a){out+='<div class="maint-item"><span style="font-size:18px;color:var(--tx3)">◻</span><span class="maint-item-label">'+sf(a.name)+'</span><button class="del-btn-sm" onclick="delAlbum(\''+a.id+'\')">刪除</button></div>';});
+  for(var i=0;i<AL.length;i++) out+='<div class="mit"><span style="font-size:16px;color:var(--tx3)">◻</span><span class="mil">'+sf(AL[i].name)+'</span><button class="dbs" onclick="delAl(\''+AL[i].id+'\')">刪除</button></div>';
   el.innerHTML=out;
 }
-function addAlbum(){
-  var inp=$('newAlInput'),name=inp.value.trim();if(!name)return;showLoading(true);
-  apiCall('saveAlbum',{name:name},function(err,r){
-    if(err){showLoading(false);showToast('❌ '+err.message);return;}
-    AL.push({id:r.id,name:name});saveCache();inp.value='';renderAlList();updateSetCounts();refreshAllSelects();showLoading(false);showToast('✓ 相冊已新增');
+function addAl(){
+  var inp=$('nAl'),nm=inp.value.replace(/^\s+|\s+$/g,'');if(!nm) return;ld(true);
+  apiXHR('saveAlbum',{name:nm},function(err,r){
+    ld(false);
+    if(err){toast('❌ '+err.message);return;}
+    AL.push({id:r.id,name:nm});saveCache();inp.value='';rAlL();updSC();refreshSels();toast('✓ 相冊已新增');
   });
 }
-function delAlbum(id){
-  if(!confirm('確定刪除？'))return;
-  var orig=AL.slice();AL=AL.filter(function(a){return a.id!==id;});showLoading(true);
-  apiCall('deleteAlbum',{id:id},function(err){
-    if(err){AL=orig;renderAlList();showLoading(false);showToast('❌ '+err.message);return;}
-    saveCache();renderAlList();updateSetCounts();refreshAllSelects();showLoading(false);showToast('✓ 已刪除');
+function delAl(id){
+  if(!confirm('確定刪除？')) return;
+  var orig=AL.slice();AL=AL.filter(function(a){return a.id!==id;});ld(true);
+  apiXHR('deleteAlbum',{id:id},function(err){
+    ld(false);
+    if(err){AL=orig;rAlL();toast('❌ '+err.message);return;}
+    saveCache();rAlL();updSC();refreshSels();toast('✓ 已刪除');
   });
 }
-function renderMaEvList(){
-  var el=$('maEvList');
-  var out='<button onclick="openMaEvEdit(null)" style="width:100%;margin-bottom:10px;padding:11px;border-radius:11px;background:var(--accent);color:#fff;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">＋ 新增活動</button>';
-  if(!E.length)out+='<div style="text-align:center;padding:20px;color:var(--tx3)">尚無活動</div>';
-  else E.forEach(function(ev){
-    out+='<div onclick="openMaEvEdit(\''+ev.id+'\')" style="display:flex;align-items:center;gap:10px;padding:12px 13px;background:var(--sf);border-radius:12px;border:1px solid var(--bd);margin-bottom:8px;cursor:pointer"><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:700;color:var(--tx)">'+sf(ev.name)+'</div><div style="font-size:11px;color:var(--tx3)">'+(ev.startDate||'未設定時間')+(ev.endDate?' → '+ev.endDate:'')+'</div></div><span style="font-size:16px;color:var(--tx3)">›</span></div>';
-  });
+function rMaEvL(){
+  var el=$('maEvL');
+  var out='<button onclick="openMaEvEd(null)" style="width:100%;margin-bottom:9px;padding:11px;border-radius:11px;background:var(--accent);color:#fff;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">＋ 新增活動</button>';
+  if(!E.length) out+='<div style="text-align:center;padding:18px;color:var(--tx3)">尚無活動</div>';
+  else for(var i=0;i<E.length;i++){
+    var ev=E[i];
+    out+='<div onclick="openMaEvEd(\''+ev.id+'\')" style="display:flex;align-items:center;gap:9px;padding:11px 13px;background:var(--sf);border-radius:11px;border:1px solid var(--bd);margin-bottom:7px;cursor:pointer"><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:700;color:var(--tx)">'+sf(ev.name)+'</div><div style="font-size:11px;color:var(--tx3)">'+(ev.startDate||'未設定時間')+(ev.endDate?' → '+ev.endDate:'')+'</div></div><span style="font-size:15px;color:var(--tx3)">›</span></div>';
+  }
   el.innerHTML=out;
 }
-function openMaEvEdit(id){
-  editMaEvId=id;
+function openMaEvEd(id){
+  eMaEvId=id;
   var ev=id?E.filter(function(e){return e.id===id;})[0]:null;
-  $('maEvEditTitle').textContent=ev?'編輯活動':'新增活動';
-  $('mev-name').value=ev?ev.name:'';
-  $('mev-start').value=ev?safeDate(ev.startDate):'';
-  $('mev-end').value=ev?safeDate(ev.endDate):'';
-  $('maEvDelBtn').style.display=ev?'block':'none';
-  var evAlbs=ev&&Array.isArray(ev.albums)?ev.albums:[];
+  $('maEvT').textContent=ev?'編輯活動':'新增活動';
+  $('mev-nm').value=ev?ev.name:'';
+  $('mev-s').value=ev?toInputDate(ev.startDate):'';
+  $('mev-e').value=ev?toInputDate(ev.endDate):'';
+  $('maEvDelB').style.display=ev?'block':'none';
+  // 顯示所有相冊供選擇
+  var evAlbs=(ev&&Array.isArray(ev.albums))?ev.albums:[];
   var out='';
   if(AL.length){
-    AL.forEach(function(a){out+='<div class="member-chk'+(evAlbs.indexOf(a.id)>=0?' on':'')+'" style="margin-bottom:7px" data-aid="'+a.id+'" onclick="this.classList.toggle(\'on\')"><div class="chk-box">✓</div><span class="chk-name">'+sf(a.name)+'</span></div>';});
-  }else{out='<div style="font-size:13px;color:var(--tx3)">尚無相冊，請先到「相冊維護」新增</div>';}
-  $('albBind').innerHTML=out;
-  openPanel('pg-maEventEdit');
+    for(var i=0;i<AL.length;i++){
+      var a=AL[i];
+      out+='<div class="mc'+(evAlbs.indexOf(a.id)>=0?' on':'')+'" style="margin-bottom:7px" data-aid="'+a.id+'" onclick="this.classList.toggle(\'on\')"><div class="mcb">✓</div><span class="mcn">'+sf(a.name)+'</span></div>';
+    }
+  }else{
+    out='<div style="font-size:13px;color:var(--tx3)">尚無相冊，請先到「相冊維護」新增</div>';
+  }
+  $('albB').innerHTML=out;
+  op('pp-maEvEd');
 }
-function saveMaEvEdit(){
-  var name=$('mev-name').value.trim();if(!name){showToast('請輸入活動名稱');return;}
-  var checked=document.querySelectorAll('#albBind .member-chk.on');
-  var albums=[];for(var i=0;i<checked.length;i++)if(checked[i].dataset.aid)albums.push(checked[i].dataset.aid);
-  var p={name:name,startDate:$('mev-start').value,endDate:$('mev-end').value,albums:albums};
-  if(editMaEvId)p.id=editMaEvId;
-  showLoading(true);
-  apiCall('saveEvent',p,function(err,r){
-    if(err){showLoading(false);showToast('❌ '+err.message);return;}
-    if(!editMaEvId)E.push({id:r.id,name:p.name,startDate:p.startDate,endDate:p.endDate,albums:albums});
-    else{var ev=E.filter(function(e){return e.id===editMaEvId;})[0];if(ev){ev.name=p.name;ev.startDate=p.startDate;ev.endDate=p.endDate;ev.albums=albums;}}
-    saveCache();closePanel('pg-maEventEdit');renderMaEvList();rEv();updateSetCounts();refreshAllSelects();showLoading(false);showToast('✓ 活動已儲存');
+function saveMaEv(){
+  var nm=$('mev-nm').value.replace(/^\s+|\s+$/g,'');
+  if(!nm){toast('請輸入活動名稱');return;}
+  var checked=document.querySelectorAll('#albB .mc.on');
+  var albums=[];
+  for(var i=0;i<checked.length;i++) if(checked[i].getAttribute('data-aid')) albums.push(checked[i].getAttribute('data-aid'));
+  var pay={name:nm,startDate:$('mev-s').value,endDate:$('mev-e').value,albums:albums};
+  if(eMaEvId) pay.id=eMaEvId;
+  ld(true);
+  apiXHR('saveEvent',pay,function(err,r){
+    ld(false);
+    if(err){toast('❌ '+err.message);return;}
+    if(!eMaEvId) E.push({id:r.id,name:pay.name,startDate:pay.startDate,endDate:pay.endDate,albums:albums});
+    else{var ev=E.filter(function(e){return e.id===eMaEvId;})[0];if(ev){ev.name=pay.name;ev.startDate=pay.startDate;ev.endDate=pay.endDate;ev.albums=albums;}}
+    saveCache();cp('pp-maEvEd');rMaEvL();rEv();updSC();refreshSels();toast('✓ 活動已儲存');
   });
 }
-function delMaEvEdit(){
-  if(!confirm('確定刪除此活動？'))return;showLoading(true);
-  apiCall('deleteEvent',{id:editMaEvId},function(err){
-    if(err){showLoading(false);showToast('❌ '+err.message);return;}
-    E=E.filter(function(e){return e.id!==editMaEvId;});
-    IT=IT.filter(function(i){return i.eventId!==editMaEvId;});
-    saveCache();closePanel('pg-maEventEdit');renderMaEvList();rEv();updateSetCounts();showLoading(false);showToast('✓ 已刪除');
+function delMaEv(){
+  if(!confirm('確定刪除此活動？')) return;ld(true);
+  apiXHR('deleteEvent',{id:eMaEvId},function(err){
+    ld(false);
+    if(err){toast('❌ '+err.message);return;}
+    E=E.filter(function(e){return e.id!==eMaEvId;});
+    IT=IT.filter(function(x){return x.eventId!==eMaEvId;});
+    saveCache();cp('pp-maEvEd');rMaEvL();rEv();updSC();toast('✓ 已刪除');
   });
 }
-
-function refreshAllSelects(){
-  ['gr-ev','tr-ev'].forEach(function(id){
-    var el=$(id);if(!el)return;var cv=el.value;
-    var h='<option value="">-- 選擇活動 --</option>';
-    E.forEach(function(ev){h+='<option value="'+ev.id+'">'+ sf(ev.name)+'</option>';});
-    el.innerHTML=h;el.value=cv;
-  });
-  ['gr-mb','tr-ma','tr-mb'].forEach(function(id){
-    var el=$(id);if(!el)return;var cv=el.value;
-    var h='<option value="">-- 選擇 --</option>';
-    MB.forEach(function(m){h+='<option value="'+m.name+'">'+sf(m.name)+'</option>';});
-    el.innerHTML=h;el.value=cv;
-  });
-  var asel=$('it-album');if(asel){var cv=asel.value;var h='<option value="">-- 不指定 --</option>';AL.forEach(function(a){h+='<option value="'+a.id+'">'+sf(a.name)+'</option>';});asel.innerHTML=h;asel.value=cv;}
+function refreshSels(){
+  var evOpts='<option value="">-- 選擇活動 --</option>';
+  for(var i=0;i<E.length;i++) evOpts+='<option value="'+E[i].id+'">'+sf(E[i].name)+'</option>';
+  var mbOpts='<option value="">-- 選擇 --</option>';
+  for(var i=0;i<MB.length;i++) mbOpts+='<option value="'+MB[i].name+'">'+sf(MB[i].name)+'</option>';
+  ['gr-ev','tr-ev'].forEach(function(id){var el=$(id);if(!el)return;var cv=el.value;el.innerHTML=evOpts;el.value=cv;});
+  ['gr-mb','tr-ma','tr-mb'].forEach(function(id){var el=$(id);if(!el)return;var cv=el.value;el.innerHTML=mbOpts;el.value=cv;});
 }
-
 function exportJSON(){
   var a=document.createElement('a');
   a.href='data:application/json,'+encodeURIComponent(JSON.stringify({E:E,IT:IT,MB:MB,AL:AL,GR:GR,TR:TR,at:new Date().toISOString()},null,2));
-  a.download='flower_'+todayStr()+'.json';a.click();
+  a.download='xunmeng_'+todayS()+'.json';a.click();
 }
 
-// ── Init ──
-showLoading(true);
+// ── init ──
+ld(true);
 startApp();
 </script>
 </body>
