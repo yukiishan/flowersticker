@@ -595,6 +595,19 @@ function toInputDate(v){
   return d.getFullYear() + '-' + pad2(d.getMonth()+1) + '-' + pad2(d.getDate());
 }
 function todayS(){return new Date().toISOString().slice(0,10);}
+// 格式化日期字串為 YYYY/MM/DD（處理各種輸入格式）
+function fmtDate(v){
+  if(!v) return '';
+  var s=String(v).replace(/^\s+|\s+$/g,'');
+  // 已是 yyyy-MM-dd
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)){
+    var p=s.split('-');return p[0]+'/'+p[1]+'/'+p[2];
+  }
+  // 嘗試解析其他格式
+  var d=new Date(s);
+  if(isNaN(d.getTime())) return s; // 無法解析就原樣顯示
+  return d.getFullYear()+'/'+pad2(d.getMonth()+1)+'/'+pad2(d.getDate());
+}
 function parseArr(v){
   if(Array.isArray(v)) return v;
   try{var r=JSON.parse(v||'[]');return Array.isArray(r)?r:[];}catch(e){return [];}
@@ -637,7 +650,13 @@ function defMB(){
   return r;
 }
 function loadCache(){
-  E=lsG('ev')||[];
+  var rawEv=lsG('ev')||[];
+  E=rawEv.map(function(ev){
+    var albs=ev.albums;
+    if(typeof albs==='string'){try{albs=JSON.parse(albs);}catch(e){albs=[];}}
+    if(!Array.isArray(albs)) albs=[];
+    return {id:ev.id,name:ev.name,startDate:ev.startDate,endDate:ev.endDate,albums:albs};
+  });
   var raw=lsG('it')||[];
   IT=[];
   for(var i=0;i<raw.length;i++){
@@ -657,7 +676,8 @@ function saveCache(){
     its.push({id:it.id,eventId:it.eventId,name:it.name,albumId:it.albumId,
       stars:it.stars,owned:JSON.stringify(it.owned||[]),extra:JSON.stringify(it.extra||[])});
   }
-  lsS('ev',E);lsS('it',its);lsS('mb',MB);lsS('al',AL);lsS('gr',GR);lsS('tr',TR);
+  var evs=E.map(function(ev){return {id:ev.id,name:ev.name,startDate:ev.startDate,endDate:ev.endDate,albums:JSON.stringify(ev.albums||[])};});
+  lsS('ev',evs);lsS('it',its);lsS('mb',MB);lsS('al',AL);lsS('gr',GR);lsS('tr',TR);
 }
 
 // ── API via XMLHttpRequest ──
@@ -701,7 +721,11 @@ function fetchAll(cb){
       if(cb) cb(false);
       return;
     }
-    E = d.events || [];
+    E = (d.events || []).map(function(ev){
+      var albs = [];
+      try{ albs = JSON.parse(ev.albums||'[]'); if(!Array.isArray(albs)) albs=[]; }catch(e){ albs=[]; }
+      return {id:ev.id,name:ev.name,startDate:ev.startDate,endDate:ev.endDate,albums:albs};
+    });
     var raw = d.items || [];
     IT = [];
     for(var i=0;i<raw.length;i++){
@@ -711,8 +735,22 @@ function fetchAll(cb){
     }
     MB = (d.members && d.members.length) ? d.members : defMB();
     AL = d.albums || [];
-    GR = d.grad || [];
-    TR = d.trades || [];
+    TR = (d.trades || []).map(function(t){
+      return {
+        id:t.id, eventId:t.eventId,
+        tradeDate:toInputDate(t.tradeDate),
+        memberA:t.memberA||'', itemA:t.itemA||'',
+        memberB:t.memberB||'', itemB:t.itemB||'',
+        note:t.note||''
+      };
+    });
+    GR = (d.grad || []).map(function(g){
+      return {
+        id:g.id, eventId:g.eventId,
+        memberId:g.memberId||'', memberName:g.memberName||'',
+        gradDate:toInputDate(g.gradDate)
+      };
+    });
     saveCache();
     setSS('ok');
     if(cb) cb(true);
@@ -775,7 +813,7 @@ function rEv(){
   for(var i=0;i<shown.length;i++){
     var ev=shown[i];
     var eit=IT.filter(function(x){return x.eventId===ev.id;});
-    var ds=ev.startDate?(ev.startDate+(ev.endDate?' → '+ev.endDate:'')):'未設定時間';
+    var ds=ev.startDate?(fmtDate(ev.startDate)+(ev.endDate?' → '+fmtDate(ev.endDate):'')):'未設定時間';
     var chips='';
     for(var j=0;j<MB.length;j++){
       var m=MB[j];
@@ -804,14 +842,16 @@ function openEvEdit(id){
 function saveEv(){
   var nm=$('ev-nm').value.replace(/^\s+|\s+$/g,'');
   if(!nm){toast('請輸入活動名稱');return;}
-  var pay={name:nm,startDate:$('ev-s').value,endDate:$('ev-e').value};
+  var existAlbs=[];
+  if(eEvId){var existEv=E.filter(function(e){return e.id===eEvId;})[0];if(existEv)existAlbs=existEv.albums||[];}
+  var pay={name:nm,startDate:$('ev-s').value,endDate:$('ev-e').value,albums:existAlbs};
   if(eEvId) pay.id=eEvId;
   ld(true);
   apiXHR('saveEvent',pay,function(err,r){
     ld(false);
     if(err){toast('❌ '+err.message);return;}
     if(!eEvId){
-      E.push({id:r.id,name:pay.name,startDate:pay.startDate,endDate:pay.endDate,albums:[]});
+      E.push({id:r.id,name:pay.name,startDate:pay.startDate,endDate:pay.endDate,albums:pay.albums||[]});
     }else{
       var ev=E.filter(function(e){return e.id===eEvId;})[0];
       if(ev){ev.name=pay.name;ev.startDate=pay.startDate;ev.endDate=pay.endDate;}
@@ -834,7 +874,7 @@ function openEvDt(id){
   dtEvId=id;curCat='all';
   var ev=E.filter(function(e){return e.id===id;})[0];
   $('dtTit').textContent=ev?ev.name:'物品列表';
-  $('dtInf').textContent=ev&&ev.startDate?(ev.startDate+(ev.endDate?' → '+ev.endDate:'')):'';
+  $('dtInf').textContent=ev&&ev.startDate?(fmtDate(ev.startDate)+(ev.endDate?' → '+fmtDate(ev.endDate):'')):''; 
   var tabs=document.querySelectorAll('.ctab');
   for(var i=0;i<tabs.length;i++) tabs[i].classList.toggle('on',tabs[i].getAttribute('data-c')==='all');
   rItems();op('pp-evDt');
@@ -964,13 +1004,13 @@ function rGr(){
   for(var i=0;i<keys.length;i++){
     var eid=keys[i];
     var ev=E.filter(function(e){return e.id===eid;})[0];
-    var ds=ev&&ev.startDate?(ev.startDate+(ev.endDate?' → '+ev.endDate:'')):'';
+    var ds=ev&&ev.startDate?(fmtDate(ev.startDate)+(ev.endDate?' → '+fmtDate(ev.endDate):'')):''; 
     out+='<div class="gst">'+sf(ev?ev.name:eid)+(ds?' · '+ds:'')+'</div>';
     var recs=byEv[eid];
     for(var j=0;j<recs.length;j++){
       var g=recs[j];
       var m=MB.filter(function(mb){return mb.id===g.memberId||mb.name===g.memberName;})[0];
-      out+='<div class="grw" onclick="openGrEdit(\''+g.id+'\')"><div class="gav" style="background:'+(m?m.color+'20':'var(--accent-bg)')+';color:'+(m?m.color:'var(--accent)')+'">'+sf((g.memberName||'?')[0])+'</div><div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--tx)">'+sf(g.memberName)+'</div><div style="font-size:11px;color:var(--tx3)">畢業：'+sf(g.gradDate||'未設定')+'</div></div><span style="font-size:16px;color:var(--tx3)">›</span></div>';
+      out+='<div class="grw" onclick="openGrEdit(\''+g.id+'\')"><div class="gav" style="background:'+(m?m.color+'20':'var(--accent-bg)')+';color:'+(m?m.color:'var(--accent)')+'">'+sf((g.memberName||'?')[0])+'</div><div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--tx)">'+sf(g.memberName)+'</div><div style="font-size:11px;color:var(--tx3)">畢業：'fmtDate(g.gradDate||'')+'</div></div><span style="font-size:16px;color:var(--tx3)">›</span></div>';
     }
   }
   el.innerHTML=out;
@@ -989,7 +1029,7 @@ function openGrEdit(id){
 function onGrEv(){
   var ev=E.filter(function(e){return e.id===$('gr-ev').value;})[0];
   var el=$('gr-ei');
-  if(ev&&ev.startDate){el.textContent=ev.startDate+(ev.endDate?' → '+ev.endDate:'');el.style.display='';}
+  if(ev&&ev.startDate){el.textContent=fmtDate(ev.startDate)+(ev.endDate?' → '+fmtDate(ev.endDate):''); el.style.display='';}
   else el.style.display='none';
 }
 function saveGr(){
@@ -1240,7 +1280,7 @@ function rMaEvL(){
   if(!E.length) out+='<div style="text-align:center;padding:18px;color:var(--tx3)">尚無活動</div>';
   else for(var i=0;i<E.length;i++){
     var ev=E[i];
-    out+='<div onclick="openMaEvEd(\''+ev.id+'\')" style="display:flex;align-items:center;gap:9px;padding:11px 13px;background:var(--sf);border-radius:11px;border:1px solid var(--bd);margin-bottom:7px;cursor:pointer"><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:700;color:var(--tx)">'+sf(ev.name)+'</div><div style="font-size:11px;color:var(--tx3)">'+(ev.startDate||'未設定時間')+(ev.endDate?' → '+ev.endDate:'')+'</div></div><span style="font-size:15px;color:var(--tx3)">›</span></div>';
+    out+='<div onclick="openMaEvEd(\''+ev.id+'\')" style="display:flex;align-items:center;gap:9px;padding:11px 13px;background:var(--sf);border-radius:11px;border:1px solid var(--bd);margin-bottom:7px;cursor:pointer"><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:700;color:var(--tx)">'+sf(ev.name)+'</div><div style="font-size:11px;color:var(--tx3)">'+(ev.startDate?fmtDate(ev.startDate):'未設定時間')+(ev.endDate?' → '+fmtDate(ev.endDate):'')+'</div></div><span style="font-size:15px;color:var(--tx3)">›</span></div>';
   }
   el.innerHTML=out;
 }
