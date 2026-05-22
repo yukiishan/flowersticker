@@ -793,8 +793,13 @@ function fetchAll(cb){
       if(cb) cb(false);
       return;
     }
+    // 儲存進行中時完全跳過，避免覆蓋剛儲存的資料
+    if(isSaving){
+      setSS('ok');
+      if(cb) cb(false);
+      return;
+    }
     E = (d.events || []).map(function(ev){
-      // albums 由 AL.eventId 決定，不再從 events 欄位解析
       return {id:ev.id,name:ev.name,startDate:ev.startDate,endDate:ev.endDate,updatedAt:ev.updatedAt||''};
     });
     var raw = d.items || [];
@@ -827,8 +832,6 @@ function fetchAll(cb){
     });
     saveCache();
     setSS('ok');
-    // 儲存進行中時，不覆蓋 local state
-    if(isSaving){if(cb)cb(false);return;}
     if(cb) cb(true);
   });
 }
@@ -838,6 +841,7 @@ function doSync(){
   ld(true);
   fetchAll(function(){
     ld(false);
+    isSaving=false;
     syncing = false;
     renderAll();
     toast('✓ 資料已同步');
@@ -928,9 +932,11 @@ function saveEv(){
   if(!nm){toast('請輸入活動名稱');return;}
   var pay={name:nm,startDate:$('ev-s').value,endDate:$('ev-e').value};
   if(eEvId){pay.id=eEvId;pay.updatedAt=eEvUpdAt;}
+  isSaving=true;
   ld(true);
   apiXHR('saveEvent',pay,function(err,r){
     ld(false);
+    isSaving=false;
     if(err){ld(false);handleSaveErr(err);return;}
     if(!eEvId){
       E.push({id:r.id,name:pay.name,startDate:pay.startDate,endDate:pay.endDate,updatedAt:r.updatedAt||''});
@@ -944,9 +950,11 @@ function saveEv(){
 }
 function delEv(){
   if(!confirm('確定刪除此活動？底下物品和相冊也會一起刪除。')) return;
+  isSaving=true;
   ld(true);
   apiXHR('deleteEvent',{id:eEvId,updatedAt:eEvUpdAt},function(err){
     ld(false);
+    isSaving=false;
     if(err){toast('❌ '+err.message);return;}
     E=E.filter(function(e){return e.id!==eEvId;});
     IT=IT.filter(function(x){return x.eventId!==eEvId;});
@@ -1066,9 +1074,11 @@ function saveIt(){
 }
 function delIt(){
   if(!confirm('確定刪除？')) return;
+  isSaving=true;
   ld(true);
   apiXHR('deleteItem',{id:eItId,updatedAt:eItUpdAt},function(err){
     ld(false);
+    isSaving=false;
     if(err){toast('❌ '+err.message);return;}
     IT=IT.filter(function(x){return x.id!==eItId;});
     saveCache();cp('pp-itEd');rItems();rEv();toast('✓ 已刪除');
@@ -1144,9 +1154,11 @@ function saveGr(){
   var m=MB.filter(function(mb){return mb.name===mv;})[0];
   var pay={eventId:eid,memberId:m?m.id:'',memberName:m?m.name:mv,gradDate:dt};
   if(eGrId){pay.id=eGrId;pay.updatedAt=eGrUpdAt;}
+  isSaving=true;
   ld(true);
   apiXHR('saveGrad',pay,function(err,r){
     ld(false);
+    isSaving=false;
     if(err){ld(false);handleSaveErr(err);return;}
     if(!eGrId){
       GR.push({id:r.id,eventId:pay.eventId,memberId:pay.memberId,memberName:pay.memberName,gradDate:pay.gradDate,updatedAt:r.updatedAt||''});
@@ -1161,9 +1173,11 @@ function saveGr(){
 function delGr(){
   if(!confirm('確定刪除？')) return;
   if(!eGrId){toast('❌ 找不到記錄 ID');return;}
+  isSaving=true;
   ld(true);
   apiXHR('deleteGrad',{id:eGrId,updatedAt:eGrUpdAt},function(err){
     ld(false);
+    isSaving=false;
     if(err){toast('❌ '+err.message,5000);return;}
     GR=GR.filter(function(g){return g.id!==eGrId;});
     saveCache();cp('pp-grEd');rGr();toast('✓ 已刪除');
@@ -1379,9 +1393,11 @@ function saveTr(){
   var pay={eventId:eid,tradeDate:dt,memberA:ma,itemA:itemA,cntA:cntA,memberB:mb,itemB:itemB,cntB:cntB,note:$('tr-nt').value||''};
   if(eTrId) pay.updatedAt=eTrUpdAt;
   if(eTrId) pay.id=eTrId;
+  isSaving=true;
   ld(true);
   apiXHR('saveTrade',pay,function(err,r){
     ld(false);
+    isSaving=false;
     if(err){ld(false);handleSaveErr(err);return;}
     if(!eTrId){
       TR.push({id:r.id,eventId:pay.eventId,tradeDate:pay.tradeDate,
@@ -1399,9 +1415,11 @@ function saveTr(){
 }
 function delTr(){
   if(!confirm('確定刪除？')) return;
+  isSaving=true;
   ld(true);
   apiXHR('deleteTrade',{id:eTrId,updatedAt:eTrUpdAt},function(err){
     ld(false);
+    isSaving=false;
     if(err){toast('❌ '+err.message);return;}
     TR=TR.filter(function(x){return x.id!==eTrId;});
     saveCache();cp('pp-trEd');renderCal();toast('✓ 已刪除');
@@ -1435,6 +1453,7 @@ function addMb(){
   MB.push(m);ld(true);
   apiXHR('saveMembers',MB,function(err){
     ld(false);
+    isSaving=false;
     if(err){MB.pop();toast('❌ '+err.message);return;}
     saveCache();inp.value='';rMbL();updSC();refreshSels();toast('✓ 成員已新增');
   });
@@ -1444,6 +1463,7 @@ function delMb(id){
   var orig=MB.slice();MB=MB.filter(function(m){return m.id!==id;});ld(true);
   apiXHR('saveMembers',MB,function(err){
     ld(false);
+    isSaving=false;
     if(err){MB=orig;rMbL();toast('❌ '+err.message);return;}
     saveCache();rMbL();updSC();refreshSels();toast('✓ 已刪除');
   });
@@ -1459,6 +1479,7 @@ function addAl(){
   var inp=$('nAl'),nm=inp.value.replace(/^\s+|\s+$/g,'');if(!nm) return;ld(true);
   apiXHR('saveAlbum',{name:nm},function(err,r){
     ld(false);
+    isSaving=false;
     if(err){toast('❌ '+err.message);return;}
     AL.push({id:r.id,name:nm});saveCache();inp.value='';rAlL();updSC();refreshSels();toast('✓ 相冊已新增');
   });
@@ -1468,6 +1489,7 @@ function delAl(id){
   var orig=AL.slice();AL=AL.filter(function(a){return a.id!==id;});ld(true);
   apiXHR('deleteAlbum',{id:id},function(err){
     ld(false);
+    isSaving=false;
     if(err){AL=orig;rAlL();toast('❌ '+err.message);return;}
     saveCache();rAlL();updSC();refreshSels();toast('✓ 已刪除');
   });
@@ -1527,6 +1549,7 @@ function renderAlbB(evId){
           ld(true);
           apiXHR('saveAlbum',{id:albumId,name:newName},function(err){
             ld(false);
+    isSaving=false;
             if(err){toast('❌ '+err.message);return;}
             var alb=AL.filter(function(x){return x.id===albumId;})[0];
             if(alb) alb.name=newName;
@@ -1547,6 +1570,7 @@ function renderAlbB(evId){
           ld(true);
           apiXHR('deleteAlbum',{id:albumId},function(err){
             ld(false);
+    isSaving=false;
             if(err){AL=orig;toast('❌ '+err.message);return;}
             saveCache();renderAlbB(eMaEvId);updSC();refreshSels();toast('✓ 相冊已刪除');
           });
@@ -1562,9 +1586,11 @@ function addAlbumInEv(){
   var inp=$('newAlbInEv'),nm=inp.value.replace(/^\s+|\s+$/g,'');
   if(!nm) return;
   if(!eMaEvId){toast('請先儲存活動，再新增相冊');return;}
+  isSaving=true;
   ld(true);
   apiXHR('saveAlbum',{name:nm,eventId:eMaEvId},function(err,r){
     ld(false);
+    isSaving=false;
     if(err){toast('❌ '+err.message);return;}
     AL.push({id:r.id,name:nm,eventId:eMaEvId});
     saveCache();inp.value='';
@@ -1579,9 +1605,11 @@ function saveMaEv(){
   if(!nm){toast('請輸入活動名稱');return;}
   var pay={name:nm,startDate:$('mev-s').value,endDate:$('mev-e').value};
   if(eMaEvId){pay.id=eMaEvId;pay.updatedAt=eMaEvUpdAt;}
+  isSaving=true;
   ld(true);
   apiXHR('saveEvent',pay,function(err,r){
     ld(false);
+    isSaving=false;
     if(err){ld(false);handleSaveErr(err);return;}
     if(!eMaEvId) E.push({id:r.id,name:pay.name,startDate:pay.startDate,endDate:pay.endDate,updatedAt:r.updatedAt||''});
     else{var ev=E.filter(function(e){return e.id===eMaEvId;})[0];if(ev){ev.name=pay.name;ev.startDate=pay.startDate;ev.endDate=pay.endDate;ev.updatedAt=r.updatedAt||'';}}
@@ -1593,6 +1621,7 @@ function delMaEv(){
   if(!confirm('確定刪除此活動？底下物品和相冊也會一起刪除。')) return;ld(true);
   apiXHR('deleteEvent',{id:eMaEvId,updatedAt:eMaEvUpdAt},function(err){
     ld(false);
+    isSaving=false;
     if(err){toast('❌ '+err.message);return;}
     E=E.filter(function(e){return e.id!==eMaEvId;});
     IT=IT.filter(function(x){return x.eventId!==eMaEvId;});
