@@ -462,6 +462,7 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
 <div class="pg-panel pg-sub" id="pp-evEd">
   <div class="pg-sub-bar"></div>
   <div class="dn"><button class="dbk" onclick="cp('pp-evEd')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button><h2 id="evEdT">新增活動</h2><button class="dsav" onclick="saveEv()">儲存</button></div>
+  <div id="uat-evEd" style="font-size:10px;color:var(--tx3);padding:3px 14px 0;background:var(--sf);display:none"></div>
   <div class="dsc">
     <div class="fs">
       <div class="fst">活動資訊</div>
@@ -488,6 +489,7 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
 <div class="pg-panel pg-sub" id="pp-itEd">
   <div class="pg-sub-bar"></div>
   <div class="dn"><button class="dbk" onclick="cp('pp-itEd')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button><h2 id="itEdT">新增物品</h2><button class="dsav" onclick="saveIt()">儲存</button></div>
+  <div id="uat-itEd" style="font-size:10px;color:var(--tx3);padding:3px 14px 0;background:var(--sf);display:none"></div>
   <div class="dsc">
     <div class="fs">
       <div class="fst">物品資訊</div>
@@ -506,6 +508,7 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
 <div class="pg-panel pg-sub" id="pp-grEd">
   <div class="pg-sub-bar"></div>
   <div class="dn"><button class="dbk" onclick="cp('pp-grEd')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button><h2 id="grEdT">新增畢業紀錄</h2><button class="dsav" onclick="saveGr()">儲存</button></div>
+  <div id="uat-grEd" style="font-size:10px;color:var(--tx3);padding:3px 14px 0;background:var(--sf);display:none"></div>
   <div class="dsc">
     <div class="fs">
       <div class="fst">畢業資訊</div>
@@ -522,6 +525,7 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
 <div class="pg-panel pg-sub" id="pp-trEd">
   <div class="pg-sub-bar"></div>
   <div class="dn"><button class="dbk" onclick="cp('pp-trEd')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button><h2 id="trEdT">新增交換紀錄</h2><button class="dsav" onclick="saveTr()">儲存</button></div>
+  <div id="uat-trEd" style="font-size:10px;color:var(--tx3);padding:3px 14px 0;background:var(--sf);display:none"></div>
   <div class="dsc">
     <div class="fs">
       <div class="fst">基本資訊</div>
@@ -588,6 +592,7 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
 <div class="pg-panel pg-sub" id="pp-maEvEd">
   <div class="pg-sub-bar"></div>
   <div class="dn"><button class="dbk" onclick="cp('pp-maEvEd')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button><h2 id="maEvT">編輯活動</h2><button class="dsav" onclick="saveMaEv()">儲存</button></div>
+  <div id="uat-maEvEd" style="font-size:10px;color:var(--tx3);padding:3px 14px 0;background:var(--sf);display:none"></div>
   <div class="dsc">
     <div class="fs">
       <div class="fst">活動資訊</div>
@@ -677,6 +682,7 @@ function setSS(s){
 var E=[],IT=[],MB=[],AL=[],GR=[],TR=[];
 var evF=null,dtEvId=null,curCat='all';
 var eEvId=null,eItId=null,eGrId=null,eTrId=null,eMaEvId=null;
+var eEvUpdAt='',eItUpdAt='',eGrUpdAt='',eTrUpdAt='',eMaEvUpdAt='';
 var itSt=0,unS={},exS={};
 var syncing=false,trF=null,grF=null;
 
@@ -754,6 +760,32 @@ function apiXHR(action, payload, cb){
 }
 
 // ── fetch all ──
+// 衝突提示（CONFLICT: 前綴）
+function handleSaveErr(err){
+  var msg=err.message||'';
+  if(msg.indexOf('CONFLICT:')===0){
+    var detail=msg.replace('CONFLICT:','').replace(/^\s+|\s+$/g,'');
+    toast('⚠ '+detail+' 請按同步後再編輯。',6000);
+  }else{
+    toast('❌ '+msg);
+  }
+}
+// 顯示上次儲存時間
+function showUpdAt(panelId, val){
+  var el=$(panelId);
+  if(!el) return;
+  if(!val||val===''){el.textContent='';el.style.display='none';return;}
+  // val 可能是 "yyyy-MM-dd HH:mm:ss" 格式
+  var d=new Date(val.replace(' ','T'));
+  var txt='';
+  if(!isNaN(d.getTime())){
+    txt='上次儲存：'+d.getFullYear()+'/'+pad2(d.getMonth()+1)+'/'+pad2(d.getDate())+' '+pad2(d.getHours())+':'+pad2(d.getMinutes());
+  }else{
+    txt='上次儲存：'+val;
+  }
+  el.textContent=txt;
+  el.style.display='';
+}
 function fetchAll(cb){
   setSS('syncing');
   apiXHR('getAll', null, function(err, d){
@@ -766,14 +798,15 @@ function fetchAll(cb){
     E = (d.events || []).map(function(ev){
       var albs = [];
       try{ albs = JSON.parse(ev.albums||'[]'); if(!Array.isArray(albs)) albs=[]; }catch(e){ albs=[]; }
-      return {id:ev.id,name:ev.name,startDate:ev.startDate,endDate:ev.endDate,albums:albs};
+      return {id:ev.id,name:ev.name,startDate:ev.startDate,endDate:ev.endDate,albums:albs,updatedAt:ev.updatedAt||''};
     });
     var raw = d.items || [];
     IT = [];
     for(var i=0;i<raw.length;i++){
       var it=raw[i];
       IT.push({id:it.id,eventId:it.eventId,name:it.name,albumId:it.albumId,
-        stars:it.stars,owned:parseArr(it.owned),extra:parseArr(it.extra)});
+        stars:it.stars,owned:parseArr(it.owned),extra:parseArr(it.extra),
+        updatedAt:it.updatedAt||''});
     }
     MB = (d.members && d.members.length) ? d.members : defMB();
     AL = (d.albums || []).map(function(a){
@@ -785,14 +818,14 @@ function fetchAll(cb){
         tradeDate:toInputDate(t.tradeDate),
         memberA:t.memberA||'', itemA:t.itemA||'', cntA:Number(t.cntA)||1,
         memberB:t.memberB||'', itemB:t.itemB||'', cntB:Number(t.cntB)||1,
-        note:t.note||''
+        note:t.note||'', updatedAt:t.updatedAt||''
       };
     });
     GR = (d.grad || []).map(function(g){
       return {
         id:g.id, eventId:g.eventId,
         memberId:g.memberId||'', memberName:g.memberName||'',
-        gradDate:toInputDate(g.gradDate)
+        gradDate:toInputDate(g.gradDate), updatedAt:g.updatedAt||''
       };
     });
     saveCache();
@@ -885,6 +918,8 @@ function openEvEdit(id){
   $('ev-s').value=ev?toInputDate(ev.startDate):'';
   $('ev-e').value=ev?toInputDate(ev.endDate):'';
   $('evDelB').style.display=ev?'block':'none';
+  eEvUpdAt=ev?ev.updatedAt||'':'';
+  showUpdAt('uat-evEd',eEvUpdAt);
   op('pp-evEd');
 }
 function saveEv(){
@@ -893,24 +928,25 @@ function saveEv(){
   var existAlbs=[];
   if(eEvId){var existEv=E.filter(function(e){return e.id===eEvId;})[0];if(existEv)existAlbs=existEv.albums||[];}
   var pay={name:nm,startDate:$('ev-s').value,endDate:$('ev-e').value,albums:existAlbs};
-  if(eEvId) pay.id=eEvId;
+  if(eEvId){pay.id=eEvId;pay.updatedAt=eEvUpdAt;}
   ld(true);
   apiXHR('saveEvent',pay,function(err,r){
     ld(false);
-    if(err){toast('❌ '+err.message);return;}
+    if(err){ld(false);handleSaveErr(err);return;}
     if(!eEvId){
-      E.push({id:r.id,name:pay.name,startDate:pay.startDate,endDate:pay.endDate,albums:pay.albums||[]});
+      E.push({id:r.id,name:pay.name,startDate:pay.startDate,endDate:pay.endDate,albums:pay.albums||[],updatedAt:r.updatedAt||''});
     }else{
       var ev=E.filter(function(e){return e.id===eEvId;})[0];
-      if(ev){ev.name=pay.name;ev.startDate=pay.startDate;ev.endDate=pay.endDate;}
+      if(ev){ev.name=pay.name;ev.startDate=pay.startDate;ev.endDate=pay.endDate;ev.updatedAt=r.updatedAt||'';}
     }
+    eEvUpdAt=r.updatedAt||'';showUpdAt('uat-evEd',eEvUpdAt);
     saveCache();cp('pp-evEd');renderAll();toast('✓ 活動已儲存');
   });
 }
 function delEv(){
   if(!confirm('確定刪除此活動？底下物品和相冊也會一起刪除。')) return;
   ld(true);
-  apiXHR('deleteEvent',{id:eEvId},function(err){
+  apiXHR('deleteEvent',{id:eEvId,updatedAt:eEvUpdAt},function(err){
     ld(false);
     if(err){toast('❌ '+err.message);return;}
     E=E.filter(function(e){return e.id!==eEvId;});
@@ -971,6 +1007,7 @@ function openItEdit(id){
   $('itEdT').textContent=it?'編輯物品':'新增物品';
   $('it-nm').value=it?it.name:'';
   $('itDelB').style.display=it?'block':'none';
+  eItUpdAt=it?it.updatedAt||'':'';
   // 相冊：只顯示該活動已連結的相冊（+「不指定」）
   var evId=it?it.eventId:dtEvId;
   var ev=E.filter(function(e){return e.id===evId;})[0];
@@ -1014,24 +1051,25 @@ function saveIt(){
   var owned=MB.filter(function(m){return!unS[m.name];}).map(function(m){return m.name;});
   var extra=Object.keys(exS);
   var pay={eventId:dtEvId,name:nm,albumId:$('it-al').value,stars:itSt||'',owned:owned,extra:extra};
-  if(eItId) pay.id=eItId;
+  if(eItId){pay.id=eItId;pay.updatedAt=eItUpdAt;}
   ld(true);
   apiXHR('saveItem',pay,function(err,r){
     ld(false);
-    if(err){toast('❌ '+err.message);return;}
+    if(err){ld(false);handleSaveErr(err);return;}
     if(!eItId){
-      IT.push({id:r.id,eventId:pay.eventId,name:pay.name,albumId:pay.albumId,stars:pay.stars,owned:owned,extra:extra});
+      IT.push({id:r.id,eventId:pay.eventId,name:pay.name,albumId:pay.albumId,stars:pay.stars,owned:owned,extra:extra,updatedAt:r.updatedAt||''});
     }else{
       var it=IT.filter(function(x){return x.id===eItId;})[0];
-      if(it){it.name=pay.name;it.albumId=pay.albumId;it.stars=pay.stars;it.owned=owned;it.extra=extra;}
+      if(it){it.name=pay.name;it.albumId=pay.albumId;it.stars=pay.stars;it.owned=owned;it.extra=extra;it.updatedAt=r.updatedAt||'';}
     }
+    eItUpdAt=r.updatedAt||'';showUpdAt('uat-itEd',eItUpdAt);
     saveCache();cp('pp-itEd');rItems();rEv();toast('✓ 物品已儲存');
   });
 }
 function delIt(){
   if(!confirm('確定刪除？')) return;
   ld(true);
-  apiXHR('deleteItem',{id:eItId},function(err){
+  apiXHR('deleteItem',{id:eItId,updatedAt:eItUpdAt},function(err){
     ld(false);
     if(err){toast('❌ '+err.message);return;}
     IT=IT.filter(function(x){return x.id!==eItId;});
@@ -1080,6 +1118,8 @@ function openGrEdit(id){
   var g=id?GR.filter(function(r){return r.id===id;})[0]:null;
   $('grEdT').textContent=g?'編輯畢業紀錄':'新增畢業紀錄';
   $('grDelB').style.display=g?'block':'none';
+  eGrUpdAt=g?g.updatedAt||'':'';
+  showUpdAt('uat-grEd',eGrUpdAt);
   $('gr-ev').value=g?g.eventId:'';
   $('gr-mb').value=g?g.memberName:'';
   $('gr-dt').value=g?toInputDate(g.gradDate):todayS();
@@ -1105,17 +1145,18 @@ function saveGr(){
   }
   var m=MB.filter(function(mb){return mb.name===mv;})[0];
   var pay={eventId:eid,memberId:m?m.id:'',memberName:m?m.name:mv,gradDate:dt};
-  if(eGrId) pay.id=eGrId;
+  if(eGrId){pay.id=eGrId;pay.updatedAt=eGrUpdAt;}
   ld(true);
   apiXHR('saveGrad',pay,function(err,r){
     ld(false);
-    if(err){toast('❌ '+err.message);return;}
+    if(err){ld(false);handleSaveErr(err);return;}
     if(!eGrId){
-      GR.push({id:r.id,eventId:pay.eventId,memberId:pay.memberId,memberName:pay.memberName,gradDate:pay.gradDate});
+      GR.push({id:r.id,eventId:pay.eventId,memberId:pay.memberId,memberName:pay.memberName,gradDate:pay.gradDate,updatedAt:r.updatedAt||''});
     }else{
       var g=GR.filter(function(x){return x.id===eGrId;})[0];
-      if(g){g.eventId=pay.eventId;g.memberId=pay.memberId;g.memberName=pay.memberName;g.gradDate=pay.gradDate;}
+      if(g){g.eventId=pay.eventId;g.memberId=pay.memberId;g.memberName=pay.memberName;g.gradDate=pay.gradDate;g.updatedAt=r.updatedAt||'';}
     }
+    eGrUpdAt=r.updatedAt||'';showUpdAt('uat-grEd',eGrUpdAt);
     saveCache();cp('pp-grEd');rGr();toast('✓ 畢業紀錄已儲存');
   });
 }
@@ -1123,7 +1164,7 @@ function delGr(){
   if(!confirm('確定刪除？')) return;
   if(!eGrId){toast('❌ 找不到記錄 ID');return;}
   ld(true);
-  apiXHR('deleteGrad',{id:eGrId},function(err){
+  apiXHR('deleteGrad',{id:eGrId,updatedAt:eGrUpdAt},function(err){
     ld(false);
     if(err){toast('❌ '+err.message,5000);return;}
     GR=GR.filter(function(g){return g.id!==eGrId;});
@@ -1200,6 +1241,8 @@ function openTrEdit(id,prefill){
   var t=id?TR.filter(function(r){return r.id===id;})[0]:null;
   $('trEdT').textContent=t?'編輯交換':'新增交換';
   $('trDelB').style.display=t?'block':'none';
+  eTrUpdAt=t?t.updatedAt||'':'';
+  showUpdAt('uat-trEd',eTrUpdAt);
   $('tr-ev').value=t?t.eventId:'';
   $('tr-dt').value=t?toInputDate(t.tradeDate):(prefill||todayS());
   $('tr-ma').value=t?t.memberA:'';
@@ -1336,28 +1379,30 @@ function saveTr(){
   }
   var eid=$('tr-ev').value;
   var pay={eventId:eid,tradeDate:dt,memberA:ma,itemA:itemA,cntA:cntA,memberB:mb,itemB:itemB,cntB:cntB,note:$('tr-nt').value||''};
+  if(eTrId) pay.updatedAt=eTrUpdAt;
   if(eTrId) pay.id=eTrId;
   ld(true);
   apiXHR('saveTrade',pay,function(err,r){
     ld(false);
-    if(err){toast('❌ '+err.message);return;}
+    if(err){ld(false);handleSaveErr(err);return;}
     if(!eTrId){
       TR.push({id:r.id,eventId:pay.eventId,tradeDate:pay.tradeDate,
         memberA:pay.memberA,itemA:pay.itemA,cntA:pay.cntA,
-        memberB:pay.memberB,itemB:pay.itemB,cntB:pay.cntB,note:pay.note});
+        memberB:pay.memberB,itemB:pay.itemB,cntB:pay.cntB,note:pay.note,updatedAt:r.updatedAt||''});
     }else{
       var t=TR.filter(function(x){return x.id===eTrId;})[0];
       if(t){t.eventId=pay.eventId;t.tradeDate=pay.tradeDate;
         t.memberA=pay.memberA;t.itemA=pay.itemA;t.cntA=pay.cntA;
-        t.memberB=pay.memberB;t.itemB=pay.itemB;t.cntB=pay.cntB;t.note=pay.note;}
+        t.memberB=pay.memberB;t.itemB=pay.itemB;t.cntB=pay.cntB;t.note=pay.note;t.updatedAt=r.updatedAt||'';}
     }
+    eTrUpdAt=r.updatedAt||'';showUpdAt('uat-trEd',eTrUpdAt);
     saveCache();cp('pp-trEd');renderCal();toast('✓ 交換紀錄已儲存');
   });
 }
 function delTr(){
   if(!confirm('確定刪除？')) return;
   ld(true);
-  apiXHR('deleteTrade',{id:eTrId},function(err){
+  apiXHR('deleteTrade',{id:eTrId,updatedAt:eTrUpdAt},function(err){
     ld(false);
     if(err){toast('❌ '+err.message);return;}
     TR=TR.filter(function(x){return x.id!==eTrId;});
@@ -1447,6 +1492,8 @@ function openMaEvEd(id){
   $('mev-s').value=ev?toInputDate(ev.startDate):'';
   $('mev-e').value=ev?toInputDate(ev.endDate):'';
   $('maEvDelB').style.display=ev?'block':'none';
+  eMaEvUpdAt=ev?ev.updatedAt||'':'';
+  showUpdAt('uat-maEvEd',eMaEvUpdAt);
   renderAlbB(id||null);
   op('pp-maEvEd');
 }
@@ -1535,19 +1582,20 @@ function saveMaEv(){
   // albums 由 AL 裡的 eventId 決定，不再用勾選
   var albums=AL.filter(function(a){return a.eventId===eMaEvId;}).map(function(a){return a.id;});
   var pay={name:nm,startDate:$('mev-s').value,endDate:$('mev-e').value,albums:albums};
-  if(eMaEvId) pay.id=eMaEvId;
+  if(eMaEvId){pay.id=eMaEvId;pay.updatedAt=eMaEvUpdAt;}
   ld(true);
   apiXHR('saveEvent',pay,function(err,r){
     ld(false);
-    if(err){toast('❌ '+err.message);return;}
-    if(!eMaEvId) E.push({id:r.id,name:pay.name,startDate:pay.startDate,endDate:pay.endDate,albums:albums});
-    else{var ev=E.filter(function(e){return e.id===eMaEvId;})[0];if(ev){ev.name=pay.name;ev.startDate=pay.startDate;ev.endDate=pay.endDate;ev.albums=albums;}}
+    if(err){ld(false);handleSaveErr(err);return;}
+    if(!eMaEvId) E.push({id:r.id,name:pay.name,startDate:pay.startDate,endDate:pay.endDate,albums:albums,updatedAt:r.updatedAt||''});
+    else{var ev=E.filter(function(e){return e.id===eMaEvId;})[0];if(ev){ev.name=pay.name;ev.startDate=pay.startDate;ev.endDate=pay.endDate;ev.albums=albums;ev.updatedAt=r.updatedAt||'';}}
+    eMaEvUpdAt=r.updatedAt||'';showUpdAt('uat-maEvEd',eMaEvUpdAt);
     saveCache();cp('pp-maEvEd');rMaEvL();rEv();updSC();refreshSels();toast('✓ 活動已儲存');
   });
 }
 function delMaEv(){
   if(!confirm('確定刪除此活動？底下物品和相冊也會一起刪除。')) return;ld(true);
-  apiXHR('deleteEvent',{id:eMaEvId},function(err){
+  apiXHR('deleteEvent',{id:eMaEvId,updatedAt:eMaEvUpdAt},function(err){
     ld(false);
     if(err){toast('❌ '+err.message);return;}
     E=E.filter(function(e){return e.id!==eMaEvId;});
