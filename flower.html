@@ -430,7 +430,12 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
 
     <!-- PAGE 4 設定 -->
     <div class="page" id="pg-set">
-      <div class="ph"><div class="ah"><h1>設定</h1></div></div>
+      <div class="ph"><div class="ah">
+        <h1>設定</h1>
+        <button class="hb" onclick="doSync()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="23,4 23,10 17,10"/><polyline points="1,20 1,14 7,14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>同步
+        </button>
+      </div></div>
       <div class="ps">
         <div class="setsc">
           <div class="setg">維護管理</div>
@@ -939,13 +944,15 @@ function goPage(tab){
 // ══ PAGE 1: EVENTS ══
 function rEv(){
   var p=$('evP');
+  var revE=E.slice().reverse(); // 最新活動在前
   var h='<div class="pill'+(evF===null?' on':'')+'" onclick="setEF(null)">全部</div>';
-  for(var i=0;i<E.length;i++) h+='<div class="pill'+(evF===E[i].id?' on':'')+'" onclick="setEF(\''+E[i].id+'\')">'+sf(E[i].name)+'</div>';
+  for(var i=0;i<revE.length;i++) h+='<div class="pill'+(evF===revE[i].id?' on':'')+'" onclick="setEF(\''+revE[i].id+'\')">'+sf(revE[i].name)+'</div>';
   p.innerHTML=h;
   var searchQ='';
   var evSrch=$('evSearch');
   if(evSrch) searchQ=evSrch.value.replace(/^\s+|\s+$/g,'').toLowerCase();
-  var shown=evF?E.filter(function(e){return e.id===evF;}):E;
+  var baseE=E.slice().reverse(); // 最新在前
+  var shown=evF?baseE.filter(function(e){return e.id===evF;}):baseE;
   if(searchQ) shown=shown.filter(function(e){return e.name.toLowerCase().indexOf(searchQ)>=0;});
   var el=$('evL');
   if(!shown.length){
@@ -1147,8 +1154,9 @@ function rGr(){
   for(var i=0;i<GR.length;i++){if(!seen[GR[i].id]){seen[GR[i].id]=true;deduped.push(GR[i]);}}
   GR=deduped;
   var p=$('grP');
+  var revE2=E.slice().reverse();
   var h='<div class="pill'+(grF===null?' on':'')+'" onclick="setGF(null)">全部</div>';
-  for(var i=0;i<E.length;i++) h+='<div class="pill'+(grF===E[i].id?' on':'')+'" onclick="setGF(\''+E[i].id+'\')">'+sf(E[i].name)+'</div>';
+  for(var i=0;i<revE2.length;i++) h+='<div class="pill'+(grF===revE2[i].id?' on':'')+'" onclick="setGF(\''+revE2[i].id+'\')">'+sf(revE2[i].name)+'</div>';
   p.innerHTML=h;
   var list=grF?GR.filter(function(g){return g.eventId===grF;}):GR;
   var el=$('grL');
@@ -1160,7 +1168,7 @@ function rGr(){
     byEv[g.eventId].push(g);
   }
   var out='';
-  var keys=Object.keys(byEv);
+  var keys=Object.keys(byEv).reverse(); // 最新活動在前
   for(var i=0;i<keys.length;i++){
     var eid=keys[i];
     var ev=E.filter(function(e){return e.id===eid;})[0];
@@ -1247,8 +1255,9 @@ function initCal(){
 function renderCal(){
   initCal();
   var p=$('trP');
+  var revE3=E.slice().reverse();
   var h='<div class="pill'+(trF===null?' on':'')+'" onclick="setTF(null)">全部活動</div>';
-  for(var i=0;i<E.length;i++) h+='<div class="pill'+(trF===E[i].id?' on':'')+'" onclick="setTF(\''+E[i].id+'\')">'+sf(E[i].name)+'</div>';
+  for(var i=0;i<revE3.length;i++) h+='<div class="pill'+(trF===revE3[i].id?' on':'')+'" onclick="setTF(\''+revE3[i].id+'\')">'+sf(revE3[i].name)+'</div>';
   p.innerHTML=h;
   var y=Number($('calY').value),m=Number($('calM').value);
   var first=new Date(y,m-1,1).getDay(),days=new Date(y,m,0).getDate();
@@ -1619,9 +1628,12 @@ function rMaEvL(){
   var el=$('maEvL');
   var out='<button onclick="openMaEvEd(null)" style="width:100%;margin-bottom:9px;padding:11px;border-radius:11px;background:var(--accent);color:#fff;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">＋ 新增活動</button>';
   if(!E.length) out+='<div style="text-align:center;padding:18px;color:var(--tx3)">尚無活動</div>';
-  else for(var i=0;i<E.length;i++){
-    var ev=E[i];
-    out+='<div onclick="openMaEvEd(\''+ev.id+'\')" style="display:flex;align-items:center;gap:9px;padding:11px 13px;background:var(--sf);border-radius:11px;border:1px solid var(--bd);margin-bottom:7px;cursor:pointer"><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:700;color:var(--tx)">'+sf(ev.name)+'</div><div style="font-size:11px;color:var(--tx3)">'+(ev.startDate?fmtDate(ev.startDate):'未設定時間')+(ev.endDate?' → '+fmtDate(ev.endDate):'')+'</div></div><span style="font-size:15px;color:var(--tx3)">›</span></div>';
+  else{
+    var revE4=E.slice().reverse(); // 最新活動在前
+    for(var i=0;i<revE4.length;i++){
+      var ev=revE4[i];
+      out+='<div onclick="openMaEvEd(\''+ev.id+'\')" style="display:flex;align-items:center;gap:9px;padding:11px 13px;background:var(--sf);border-radius:11px;border:1px solid var(--bd);margin-bottom:7px;cursor:pointer"><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:700;color:var(--tx)">'+sf(ev.name)+'</div><div style="font-size:11px;color:var(--tx3)">'+(ev.startDate?fmtDate(ev.startDate):'未設定時間')+(ev.endDate?' → '+fmtDate(ev.endDate):'')+'</div></div><span style="font-size:15px;color:var(--tx3)">›</span></div>';
+    }
   }
   el.innerHTML=out;
 }
