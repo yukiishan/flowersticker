@@ -698,10 +698,7 @@ function defMB(){
 function loadCache(){
   var rawEv=lsG('ev')||[];
   E=rawEv.map(function(ev){
-    var albs=ev.albums;
-    if(typeof albs==='string'){try{albs=JSON.parse(albs);}catch(e){albs=[];}}
-    if(!Array.isArray(albs)) albs=[];
-    return {id:ev.id,name:ev.name,startDate:ev.startDate,endDate:ev.endDate,albums:albs};
+    return {id:ev.id,name:ev.name,startDate:ev.startDate,endDate:ev.endDate,updatedAt:ev.updatedAt||''};
   });
   var raw=lsG('it')||[];
   IT=[];
@@ -723,7 +720,8 @@ function saveCache(){
     its.push({id:it.id,eventId:it.eventId,name:it.name,albumId:it.albumId,
       stars:it.stars,owned:JSON.stringify(it.owned||[]),extra:JSON.stringify(it.extra||[])});
   }
-  var evs=E.map(function(ev){return {id:ev.id,name:ev.name,startDate:ev.startDate,endDate:ev.endDate,albums:JSON.stringify(ev.albums||[])};});
+  // albums 由 AL.eventId 決定，不再儲存於 ev 物件
+  var evs=E.map(function(ev){return {id:ev.id,name:ev.name,startDate:ev.startDate,endDate:ev.endDate,updatedAt:ev.updatedAt||''};});
   var als=AL.map(function(a){return{id:a.id,name:a.name,eventId:a.eventId||''};});
   lsS('ev',evs);lsS('it',its);lsS('mb',MB);lsS('al',als);lsS('gr',GR);lsS('tr',TR);
 }
@@ -796,9 +794,8 @@ function fetchAll(cb){
       return;
     }
     E = (d.events || []).map(function(ev){
-      var albs = [];
-      try{ albs = JSON.parse(ev.albums||'[]'); if(!Array.isArray(albs)) albs=[]; }catch(e){ albs=[]; }
-      return {id:ev.id,name:ev.name,startDate:ev.startDate,endDate:ev.endDate,albums:albs,updatedAt:ev.updatedAt||''};
+      // albums 由 AL.eventId 決定，不再從 events 欄位解析
+      return {id:ev.id,name:ev.name,startDate:ev.startDate,endDate:ev.endDate,updatedAt:ev.updatedAt||''};
     });
     var raw = d.items || [];
     IT = [];
@@ -925,16 +922,14 @@ function openEvEdit(id){
 function saveEv(){
   var nm=$('ev-nm').value.replace(/^\s+|\s+$/g,'');
   if(!nm){toast('請輸入活動名稱');return;}
-  var existAlbs=[];
-  if(eEvId){var existEv=E.filter(function(e){return e.id===eEvId;})[0];if(existEv)existAlbs=existEv.albums||[];}
-  var pay={name:nm,startDate:$('ev-s').value,endDate:$('ev-e').value,albums:existAlbs};
+  var pay={name:nm,startDate:$('ev-s').value,endDate:$('ev-e').value};
   if(eEvId){pay.id=eEvId;pay.updatedAt=eEvUpdAt;}
   ld(true);
   apiXHR('saveEvent',pay,function(err,r){
     ld(false);
     if(err){ld(false);handleSaveErr(err);return;}
     if(!eEvId){
-      E.push({id:r.id,name:pay.name,startDate:pay.startDate,endDate:pay.endDate,albums:pay.albums||[],updatedAt:r.updatedAt||''});
+      E.push({id:r.id,name:pay.name,startDate:pay.startDate,endDate:pay.endDate,updatedAt:r.updatedAt||''});
     }else{
       var ev=E.filter(function(e){return e.id===eEvId;})[0];
       if(ev){ev.name=pay.name;ev.startDate=pay.startDate;ev.endDate=pay.endDate;ev.updatedAt=r.updatedAt||'';}
@@ -1008,14 +1003,11 @@ function openItEdit(id){
   $('it-nm').value=it?it.name:'';
   $('itDelB').style.display=it?'block':'none';
   eItUpdAt=it?it.updatedAt||'':'';
-  // 相冊：只顯示該活動已連結的相冊（+「不指定」）
+  // 相冊：只顯示屬於此活動的相冊（AL.eventId === 活動id）
   var evId=it?it.eventId:dtEvId;
-  var ev=E.filter(function(e){return e.id===evId;})[0];
-  var evAlbs=(ev&&Array.isArray(ev.albums))?ev.albums:[];
-  // 如果活動沒綁相冊，顯示所有相冊
-  var alFilter=(evAlbs.length>0)?AL.filter(function(a){return evAlbs.indexOf(a.id)>=0;}):AL;
+  var evAlbs=AL.filter(function(a){return a.eventId===evId;});
   var ah='<option value="">-- 不指定 --</option>';
-  for(var i=0;i<alFilter.length;i++) ah+='<option value="'+alFilter[i].id+'"'+(it&&it.albumId===alFilter[i].id?' selected':'')+'>'+sf(alFilter[i].name)+'</option>';
+  for(var i=0;i<evAlbs.length;i++) ah+='<option value="'+evAlbs[i].id+'"'+(it&&it.albumId===evAlbs[i].id?' selected':'')+'>'+sf(evAlbs[i].name)+'</option>';
   $('it-al').innerHTML=ah;
   itSt=it?Number(it.stars)||0:0;
   setStar(itSt);
@@ -1579,16 +1571,14 @@ function addAlbumInEv(){
 function saveMaEv(){
   var nm=$('mev-nm').value.replace(/^\s+|\s+$/g,'');
   if(!nm){toast('請輸入活動名稱');return;}
-  // albums 由 AL 裡的 eventId 決定，不再用勾選
-  var albums=AL.filter(function(a){return a.eventId===eMaEvId;}).map(function(a){return a.id;});
-  var pay={name:nm,startDate:$('mev-s').value,endDate:$('mev-e').value,albums:albums};
+  var pay={name:nm,startDate:$('mev-s').value,endDate:$('mev-e').value};
   if(eMaEvId){pay.id=eMaEvId;pay.updatedAt=eMaEvUpdAt;}
   ld(true);
   apiXHR('saveEvent',pay,function(err,r){
     ld(false);
     if(err){ld(false);handleSaveErr(err);return;}
-    if(!eMaEvId) E.push({id:r.id,name:pay.name,startDate:pay.startDate,endDate:pay.endDate,albums:albums,updatedAt:r.updatedAt||''});
-    else{var ev=E.filter(function(e){return e.id===eMaEvId;})[0];if(ev){ev.name=pay.name;ev.startDate=pay.startDate;ev.endDate=pay.endDate;ev.albums=albums;ev.updatedAt=r.updatedAt||'';}}
+    if(!eMaEvId) E.push({id:r.id,name:pay.name,startDate:pay.startDate,endDate:pay.endDate,updatedAt:r.updatedAt||''});
+    else{var ev=E.filter(function(e){return e.id===eMaEvId;})[0];if(ev){ev.name=pay.name;ev.startDate=pay.startDate;ev.endDate=pay.endDate;ev.updatedAt=r.updatedAt||'';}}
     eMaEvUpdAt=r.updatedAt||'';showUpdAt('uat-maEvEd',eMaEvUpdAt);
     saveCache();cp('pp-maEvEd');rMaEvL();rEv();updSC();refreshSels();toast('✓ 活動已儲存');
   });
