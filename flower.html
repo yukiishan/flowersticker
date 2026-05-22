@@ -1041,6 +1041,10 @@ function delIt(){
 
 // ══ PAGE 2: GRADUATION ══
 function rGr(){
+  // 防重複：依 id 去重
+  var seen={};var deduped=[];
+  for(var i=0;i<GR.length;i++){if(!seen[GR[i].id]){seen[GR[i].id]=true;deduped.push(GR[i]);}}
+  GR=deduped;
   var p=$('grP');
   var h='<div class="pill'+(grF===null?' on':'')+'" onclick="setGF(null)">全部</div>';
   for(var i=0;i<E.length;i++) h+='<div class="pill'+(grF===E[i].id?' on':'')+'" onclick="setGF(\''+E[i].id+'\')">'+sf(E[i].name)+'</div>';
@@ -1090,6 +1094,15 @@ function onGrEv(){
 function saveGr(){
   var eid=$('gr-ev').value,mv=$('gr-mb').value,dt=$('gr-dt').value;
   if(!eid||!mv){toast('請選擇活動和成員');return;}
+  // 卡控：同活動同成員已有畢業紀錄
+  if(!eGrId){
+    var dup=GR.filter(function(g){return g.eventId===eid&&g.memberName===mv;})[0];
+    if(dup){
+      var ev=E.filter(function(e){return e.id===eid;})[0];
+      toast('⚠ '+mv+' 於活動「'+(ev?ev.name:eid)+'」已有畢業紀錄（'+fmtDate(dup.gradDate)+'），不可重複儲存！',5000);
+      return;
+    }
+  }
   var m=MB.filter(function(mb){return mb.name===mv;})[0];
   var pay={eventId:eid,memberId:m?m.id:'',memberName:m?m.name:mv,gradDate:dt};
   if(eGrId) pay.id=eGrId;
@@ -1227,7 +1240,8 @@ function openTrEdit(id,prefill){
 }
 function onTrEv(){
   var eid=$('tr-ev').value;
-  var its=eid?IT.filter(function(x){return x.eventId===eid;}):IT;
+  // 未選活動時不顯示物品，避免殘留已刪活動的品項
+  var its=eid?IT.filter(function(x){return x.eventId===eid;}):[];
   var opts='<option value="">-- 從清單選 --</option>';
   for(var i=0;i<its.length;i++) opts+='<option value="'+its[i].id+'">'+sf(its[i].name)+'</option>';
   $('tr-ias').innerHTML=opts;
