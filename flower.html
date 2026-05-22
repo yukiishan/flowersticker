@@ -760,6 +760,10 @@ function apiXHR(action, payload, cb){
 }
 
 // ── fetch all ──
+// 延遲釋放 isSaving 鎖（防止 fetchAll 在寫入後立刻覆蓋）
+function releaseSaving(){
+  setTimeout(function(){ isSaving=false; }, 1500);
+}
 // 衝突提示（CONFLICT: 前綴）
 function handleSaveErr(err){
   var msg=err.message||'';
@@ -801,22 +805,53 @@ function fetchAll(cb){
       if(cb) cb(false);
       return;
     }
+
+    // ── 智慧合併：保留本地比雲端新的資料 ──
+    // 建立雲端 items 的 id → updatedAt map
+    var cloudItems = d.items || [];
+    var cloudItemMap = {};
+    for(var ci=0;ci<cloudItems.length;ci++){
+      cloudItemMap[cloudItems[ci].id] = cloudItems[ci].updatedAt||'';
+    }
+    // 找出本地有但雲端沒有（可能是剛寫入雲端還未 flush 的）
+    var localOnlyItems = [];
+    for(var li=0;li<IT.length;li++){
+      var lit = IT[li];
+      if(!cloudItemMap[lit.id]){
+        // 本地有、雲端沒有 → 保留（可能剛寫入還沒同步到）
+        localOnlyItems.push(lit);
+      }
+    }
+
     E = (d.events || []).map(function(ev){
       return {id:ev.id,name:ev.name,startDate:ev.startDate,endDate:ev.endDate,updatedAt:ev.updatedAt||''};
     });
-    var raw = d.items || [];
+
+    // 用雲端資料重建 IT，再補回本地多出的物品
     IT = [];
-    for(var i=0;i<raw.length;i++){
-      var it=raw[i];
+    for(var i=0;i<cloudItems.length;i++){
+      var it=cloudItems[i];
       IT.push({id:it.id,eventId:it.eventId,name:it.name,albumId:it.albumId,
         stars:it.stars,owned:parseArr(it.owned),extra:parseArr(it.extra),
         updatedAt:it.updatedAt||''});
     }
+    // 合併本地多出的物品（雲端尚未包含）
+    for(var ki=0;ki<localOnlyItems.length;ki++){
+      IT.push(localOnlyItems[ki]);
+    }
+
     MB = (d.members && d.members.length) ? d.members : defMB();
     AL = (d.albums || []).map(function(a){
       return {id:a.id, name:a.name, eventId:a.eventId||''};
     });
-    TR = (d.trades || []).map(function(t){
+
+    // 同樣對 TR/GR 做智慧合併
+    var cloudTrades = d.trades || [];
+    var cloudTradeMap = {};
+    for(var ct=0;ct<cloudTrades.length;ct++) cloudTradeMap[cloudTrades[ct].id]=true;
+    var localOnlyTrades = TR.filter(function(t){return !cloudTradeMap[t.id];});
+
+    TR = cloudTrades.map(function(t){
       return {
         id:t.id, eventId:t.eventId,
         tradeDate:toInputDate(t.tradeDate),
@@ -825,15 +860,23 @@ function fetchAll(cb){
         note:t.note||'', updatedAt:t.updatedAt||''
       };
     });
-    GR = (d.grad || []).map(function(g){
+    for(var kt=0;kt<localOnlyTrades.length;kt++) TR.push(localOnlyTrades[kt]);
+
+    var cloudGrads = d.grad || [];
+    var cloudGradMap = {};
+    for(var cg=0;cg<cloudGrads.length;cg++) cloudGradMap[cloudGrads[cg].id]=true;
+    var localOnlyGrads = GR.filter(function(g){return !cloudGradMap[g.id];});
+
+    GR = cloudGrads.map(function(g){
       return {
         id:g.id, eventId:g.eventId,
         memberId:g.memberId||'', memberName:g.memberName||'',
         gradDate:toInputDate(g.gradDate), updatedAt:g.updatedAt||''
       };
     });
+    for(var kg=0;kg<localOnlyGrads.length;kg++) GR.push(localOnlyGrads[kg]);
+
     saveCache();
-    isSaving=false;
     setSS('ok');
     if(cb) cb(true);
   });
@@ -946,7 +989,7 @@ function saveEv(){
       if(ev){ev.name=pay.name;ev.startDate=pay.startDate;ev.endDate=pay.endDate;ev.updatedAt=r.updatedAt||'';}
     }
     eEvUpdAt=r.updatedAt||'';showUpdAt('uat-evEd',eEvUpdAt);
-    saveCache();cp('pp-evEd');renderAll();toast('✓ 活動已儲存');
+    saveCache();releaseSaving();cp('pp-evEd');renderAll();toast('✓ 活動已儲存');
   });
 }
 function delEv(){
@@ -959,7 +1002,7 @@ function delEv(){
     E=E.filter(function(e){return e.id!==eEvId;});
     IT=IT.filter(function(x){return x.eventId!==eEvId;});
     AL=AL.filter(function(a){return a.eventId!==eEvId;});
-    saveCache();isSaving=false;cp('pp-evEd');renderAll();toast('✓ 已刪除');
+    saveCache();releaseSaving();cp('pp-evEd');renderAll();toast('✓ 已刪除');
   });
 }
 function openEvDt(id){
@@ -1069,7 +1112,7 @@ function saveIt(){
     }
     eItUpdAt=r.updatedAt||'';showUpdAt('uat-itEd',eItUpdAt);
     saveCache();
-    isSaving=false;
+    releaseSaving();
     cp('pp-itEd');rItems();rEv();toast('✓ 物品已儲存');
   });
 }
@@ -1081,7 +1124,7 @@ function delIt(){
     ld(false);
     if(err){isSaving=false;toast('❌ '+err.message);return;}
     IT=IT.filter(function(x){return x.id!==eItId;});
-    saveCache();isSaving=false;cp('pp-itEd');rItems();rEv();toast('✓ 已刪除');
+    saveCache();releaseSaving();cp('pp-itEd');rItems();rEv();toast('✓ 已刪除');
   });
 }
 
@@ -1166,7 +1209,7 @@ function saveGr(){
       if(g){g.eventId=pay.eventId;g.memberId=pay.memberId;g.memberName=pay.memberName;g.gradDate=pay.gradDate;g.updatedAt=r.updatedAt||'';}
     }
     eGrUpdAt=r.updatedAt||'';showUpdAt('uat-grEd',eGrUpdAt);
-    saveCache();isSaving=false;cp('pp-grEd');rGr();toast('✓ 畢業紀錄已儲存');
+    saveCache();releaseSaving();cp('pp-grEd');rGr();toast('✓ 畢業紀錄已儲存');
   });
 }
 function delGr(){
@@ -1178,7 +1221,7 @@ function delGr(){
     ld(false);
     if(err){toast('❌ '+err.message,5000);return;}
     GR=GR.filter(function(g){return g.id!==eGrId;});
-    saveCache();isSaving=false;cp('pp-grEd');rGr();toast('✓ 已刪除');
+    saveCache();releaseSaving();cp('pp-grEd');rGr();toast('✓ 已刪除');
   });
 }
 
@@ -1407,7 +1450,7 @@ function saveTr(){
         t.memberB=pay.memberB;t.itemB=pay.itemB;t.cntB=pay.cntB;t.note=pay.note;t.updatedAt=r.updatedAt||'';}
     }
     eTrUpdAt=r.updatedAt||'';showUpdAt('uat-trEd',eTrUpdAt);
-    saveCache();cp('pp-trEd');renderCal();toast('✓ 交換紀錄已儲存');
+    saveCache();releaseSaving();cp('pp-trEd');renderCal();toast('✓ 交換紀錄已儲存');
   });
 }
 function delTr(){
@@ -1418,7 +1461,7 @@ function delTr(){
     ld(false);
     if(err){isSaving=false;toast('❌ '+err.message);return;}
     TR=TR.filter(function(x){return x.id!==eTrId;});
-    saveCache();isSaving=false;cp('pp-trEd');renderCal();toast('✓ 已刪除');
+    saveCache();releaseSaving();cp('pp-trEd');renderCal();toast('✓ 已刪除');
   });
 }
 
@@ -1451,7 +1494,7 @@ function addMb(){
   apiXHR('saveMembers',MB,function(err){
     ld(false);
     if(err){isSaving=false;MB.pop();toast('❌ '+err.message);return;}
-    saveCache();isSaving=false;inp.value='';rMbL();updSC();refreshSels();toast('✓ 成員已新增');
+    saveCache();releaseSaving();inp.value='';rMbL();updSC();refreshSels();toast('✓ 成員已新增');
   });
 }
 function delMb(id){
@@ -1461,22 +1504,7 @@ function delMb(id){
   apiXHR('saveMembers',MB,function(err){
     ld(false);
     if(err){isSaving=false;MB=orig;rMbL();toast('❌ '+err.message);return;}
-    saveCache();isSaving=false;rMbL();updSC();refreshSels();toast('✓ 已刪除');
-  });
-}
-function rAlL(){
-  var el=$('alL');
-  if(!AL.length){el.innerHTML='<div style="text-align:center;padding:28px;color:var(--tx3)">尚無相冊</div>';return;}
-  var out='';
-  for(var i=0;i<AL.length;i++) out+='<div class="mit"><span style="font-size:16px;color:var(--tx3)">◻</span><span class="mil">'+sf(AL[i].name)+'</span><button class="dbs" onclick="delAl(\''+AL[i].id+'\')">刪除</button></div>';
-  el.innerHTML=out;
-}
-function addAl(){
-  var inp=$('nAl'),nm=inp.value.replace(/^\s+|\s+$/g,'');if(!nm) return;ld(true);
-  apiXHR('saveAlbum',{name:nm},function(err,r){
-    ld(false);
-    if(err){isSaving=false;toast('❌ '+err.message);return;}
-    AL.push({id:r.id,name:nm});saveCache();inp.value='';rAlL();updSC();refreshSels();toast('✓ 相冊已新增');
+    saveCache();releaseSaving();rMbL();updSC();refreshSels();toast('✓ 已刪除');
   });
 }
 function delAl(id){
@@ -1583,7 +1611,7 @@ function addAlbumInEv(){
     ld(false);
     if(err){isSaving=false;toast('❌ '+err.message);return;}
     AL.push({id:r.id,name:nm,eventId:eMaEvId});
-    saveCache();isSaving=false;inp.value='';
+    saveCache();releaseSaving();inp.value='';
     renderAlbB(eMaEvId);
     updSC();refreshSels();toast('✓ 相冊已新增');
   });
@@ -1603,7 +1631,7 @@ function saveMaEv(){
     if(!eMaEvId) E.push({id:r.id,name:pay.name,startDate:pay.startDate,endDate:pay.endDate,updatedAt:r.updatedAt||''});
     else{var ev=E.filter(function(e){return e.id===eMaEvId;})[0];if(ev){ev.name=pay.name;ev.startDate=pay.startDate;ev.endDate=pay.endDate;ev.updatedAt=r.updatedAt||'';}}
     eMaEvUpdAt=r.updatedAt||'';showUpdAt('uat-maEvEd',eMaEvUpdAt);
-    saveCache();cp('pp-maEvEd');rMaEvL();rEv();updSC();refreshSels();toast('✓ 活動已儲存');
+    saveCache();releaseSaving();cp('pp-maEvEd');rMaEvL();rEv();updSC();refreshSels();toast('✓ 活動已儲存');
   });
 }
 function delMaEv(){
