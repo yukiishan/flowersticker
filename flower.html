@@ -530,7 +530,13 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
     </div>
     <div class="fs">
       <div class="fst">成員 A</div>
-      <div class="fr"><div class="fl">成員</div><div class="fb"><select id="tr-ma" class="fse" onchange="autoFillCnt('tr-ma','tr-ca')"><option value="">-- 選擇 --</option></select></div></div>
+      <div class="fr"><div class="fl">成員</div>
+        <div class="combo">
+          <select id="tr-ma" class="fse" onchange="onMAsel()"><option value="">-- 從清單選 --</option></select>
+          <div class="combo-or">─ 或手動輸入 ─</div>
+          <input id="tr-ma-txt" class="fi" placeholder="手動輸入成員名稱" oninput="autoFillCntFromTxt('tr-ma-txt','tr-ca')">
+        </div>
+      </div>
       <div class="fr"><div class="fl">交換物品 A</div>
         <div class="combo">
           <select id="tr-ias" class="fse" onchange="onIAS()"><option value="">-- 從清單選 --</option></select>
@@ -542,7 +548,13 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
     </div>
     <div class="fs">
       <div class="fst">成員 B</div>
-      <div class="fr"><div class="fl">成員</div><div class="fb"><select id="tr-mb" class="fse" onchange="autoFillCnt('tr-mb','tr-cb')"><option value="">-- 選擇 --</option></select></div></div>
+      <div class="fr"><div class="fl">成員</div>
+        <div class="combo">
+          <select id="tr-mb" class="fse" onchange="onMBsel()"><option value="">-- 從清單選 --</option></select>
+          <div class="combo-or">─ 或手動輸入 ─</div>
+          <input id="tr-mb-txt" class="fi" placeholder="手動輸入成員名稱" oninput="autoFillCntFromTxt('tr-mb-txt','tr-cb')">
+        </div>
+      </div>
       <div class="fr"><div class="fl">交換物品 B</div>
         <div class="combo">
           <select id="tr-ibs" class="fse" onchange="onIBS()"><option value="">-- 從清單選 --</option></select>
@@ -896,13 +908,14 @@ function saveEv(){
   });
 }
 function delEv(){
-  if(!confirm('確定刪除此活動？底下物品也會一起刪除。')) return;
+  if(!confirm('確定刪除此活動？底下物品和相冊也會一起刪除。')) return;
   ld(true);
   apiXHR('deleteEvent',{id:eEvId},function(err){
     ld(false);
     if(err){toast('❌ '+err.message);return;}
     E=E.filter(function(e){return e.id!==eEvId;});
     IT=IT.filter(function(x){return x.eventId!==eEvId;});
+    AL=AL.filter(function(a){return a.eventId!==eEvId;});
     saveCache();cp('pp-evEd');renderAll();toast('✓ 已刪除');
   });
 }
@@ -1182,19 +1195,31 @@ function openTrEdit(id,prefill){
   $('tr-ca').value=(t&&t.cntA)?String(t.cntA):'1';
   $('tr-cb').value=(t&&t.cntB)?String(t.cntB):'1';
   onTrEv();
-  if(t){
-    // 填入物品 A/B（延遲等 select 渲染完）
-    var savedA=t.itemA||'';
-    var savedB=t.itemB||'';
-    setTimeout(function(){
-      var sA=$('tr-ias'),sB=$('tr-ibs');
-      var matchA=false,matchB=false;
-      for(var i=0;i<sA.options.length;i++){if(sA.options[i].text===savedA){sA.selectedIndex=i;matchA=true;break;}}
-      if(!matchA){sA.value='';$('tr-iat').value=savedA;}else{$('tr-iat').value='';}
-      for(var i=0;i<sB.options.length;i++){if(sB.options[i].text===savedB){sB.selectedIndex=i;matchB=true;break;}}
-      if(!matchB){sB.value='';$('tr-ibt').value=savedB;}else{$('tr-ibt').value='';}
-    },80);
-  }else{
+  // 填入成員 A/B（延遲等 select 渲染完）
+  setTimeout(function(){
+    // 成員 A
+    var savedMA=t?t.memberA:'';
+    var maInMB=savedMA?MB.filter(function(m){return m.name===savedMA;}).length>0:false;
+    if(maInMB){$('tr-ma').value=savedMA;$('tr-ma-txt').value='';}
+    else{$('tr-ma').value='';$('tr-ma-txt').value=savedMA;}
+    // 成員 B
+    var savedMB=t?t.memberB:'';
+    var mbInMB=savedMB?MB.filter(function(m){return m.name===savedMB;}).length>0:false;
+    if(mbInMB){$('tr-mb').value=savedMB;$('tr-mb-txt').value='';}
+    else{$('tr-mb').value='';$('tr-mb-txt').value=savedMB;}
+    // 物品 A/B
+    var savedA=t?t.itemA||'':'';
+    var savedB=t?t.itemB||'':'';
+    var sA=$('tr-ias'),sB=$('tr-ibs');
+    var matchA=false,matchB=false;
+    for(var i=0;i<sA.options.length;i++){if(sA.options[i].text===savedA){sA.selectedIndex=i;matchA=true;break;}}
+    if(!matchA){sA.value='';$('tr-iat').value=savedA;}else{$('tr-iat').value='';}
+    for(var i=0;i<sB.options.length;i++){if(sB.options[i].text===savedB){sB.selectedIndex=i;matchB=true;break;}}
+    if(!matchB){sB.value='';$('tr-ibt').value=savedB;}else{$('tr-ibt').value='';}
+  },80);
+  if(!t){
+    $('tr-ma').value='';$('tr-ma-txt').value='';
+    $('tr-mb').value='';$('tr-mb-txt').value='';
     $('tr-ias').value='';$('tr-iat').value='';
     $('tr-ibs').value='';$('tr-ibt').value='';
   }
@@ -1210,11 +1235,39 @@ function onTrEv(){
 }
 function onIAS(){if($('tr-ias').value)$('tr-iat').value='';}
 function onIBS(){if($('tr-ibs').value)$('tr-ibt').value='';}
-// 選擇成員時自動帶入當天的下一個序號
-function autoFillCnt(memberSelId, cntSelId){
-  var name=$(memberSelId).value;
+// 從下拉選成員時清空手動輸入，並自動帶入次數
+function onMAsel(){
+  if($('tr-ma').value) $('tr-ma-txt').value='';
+  autoFillCntByName(getMemberName('tr-ma','tr-ma-txt'),'tr-ca');
+}
+function onMBsel(){
+  if($('tr-mb').value) $('tr-mb-txt').value='';
+  autoFillCntByName(getMemberName('tr-mb','tr-mb-txt'),'tr-cb');
+}
+// 手動輸入成員時觸發（只對維護成員計算次數）
+function autoFillCntFromTxt(txtId,cntId){
+  if($(txtId).value.replace(/^\s+|\s+$/g,'')){
+    $('tr-ma'===txtId.replace('-txt','')?'tr-ma':'tr-mb').value='';
+  }
+  var name=$(txtId).value.replace(/^\s+|\s+$/g,'');
+  autoFillCntByName(name,cntId);
+}
+// 取得成員名稱（優先手動輸入，否則從下拉）
+function getMemberName(selId,txtId){
+  var txt=$(txtId).value.replace(/^\s+|\s+$/g,'');
+  if(txt) return txt;
+  var sel=$(selId);
+  if(sel.value&&sel.selectedIndex>0) return sel.options[sel.selectedIndex].text;
+  return '';
+}
+// 自動帶入次數：只對維護成員計算，手動輸入的非維護成員不計算
+function autoFillCntByName(name,cntId){
+  if(!name){$(cntId).value='1';return;}
   var dt=$('tr-dt').value;
-  if(!name||!dt) return;
+  if(!dt){$(cntId).value='1';return;}
+  // 只對維護成員（MB）計算次數
+  var inMB=MB.filter(function(m){return m.name===name;}).length>0;
+  if(!inMB){$(cntId).value='1';return;}
   var count=0;
   for(var i=0;i<TR.length;i++){
     var x=TR[i];
@@ -1222,8 +1275,11 @@ function autoFillCnt(memberSelId, cntSelId){
     if(x.tradeDate!==dt) continue;
     if(x.memberA===name||x.memberB===name) count++;
   }
-  var next=Math.min(count+1,3);
-  $(cntSelId).value=String(next);
+  $(cntId).value=String(Math.min(count+1,3));
+}
+// 舊的 autoFillCnt 保留相容
+function autoFillCnt(selId,cntId){
+  autoFillCntByName(getMemberName(selId,selId+'-txt'),cntId);
 }
 function getItName(selId,txtId){
   var txt=$(txtId).value.replace(/^\s+|\s+$/g,'');if(txt) return txt;
@@ -1232,15 +1288,18 @@ function getItName(selId,txtId){
   return '';
 }
 function saveTr(){
-  var dt=$('tr-dt').value,ma=$('tr-ma').value,mb=$('tr-mb').value;
+  var dt=$('tr-dt').value;
+  var ma=getMemberName('tr-ma','tr-ma-txt');
+  var mb=getMemberName('tr-mb','tr-mb-txt');
   if(!dt||!ma||!mb){toast('請填寫日期和雙方成員');return;}
   if(ma===mb){toast('成員 A 和 B 不能相同');return;}
   var itemA=getItName('tr-ias','tr-iat');
   var itemB=getItName('tr-ibs','tr-ibt');
   var cntA=Number($('tr-ca').value)||1;
   var cntB=Number($('tr-cb').value)||1;
-  // 驗證：次數A/B 是「第幾次」標記（第1次/第2次/第3次）
-  // 每人每天最多出現在 3 筆交換紀錄裡，第4筆才擋
+  // 次數驗證：只對維護成員（MB）計算，手動輸入的非維護成員不擋
+  var maInMB=MB.filter(function(m){return m.name===ma;}).length>0;
+  var mbInMB=MB.filter(function(m){return m.name===mb;}).length>0;
   var allSameDay=TR.filter(function(x){
     if(eTrId&&x.id===eTrId) return false;
     return x.tradeDate===dt;
@@ -1253,10 +1312,14 @@ function saveTr(){
     }
     return c;
   }
-  var countA=personCount(ma); // ma 當天已有幾筆
-  var countB=personCount(mb); // mb 當天已有幾筆
-  if(countA>=3){toast('⚠ '+ma+' 今日已有 '+countA+' 筆交換紀錄，已達上限 3 筆！');return;}
-  if(countB>=3){toast('⚠ '+mb+' 今日已有 '+countB+' 筆交換紀錄，已達上限 3 筆！');return;}
+  if(maInMB){
+    var countA=personCount(ma);
+    if(countA>=3){toast('⚠ '+ma+' 今日已有 '+countA+' 筆交換紀錄，已達上限 3 筆！');return;}
+  }
+  if(mbInMB){
+    var countB=personCount(mb);
+    if(countB>=3){toast('⚠ '+mb+' 今日已有 '+countB+' 筆交換紀錄，已達上限 3 筆！');return;}
+  }
   var eid=$('tr-ev').value;
   var pay={eventId:eid,tradeDate:dt,memberA:ma,itemA:itemA,cntA:cntA,memberB:mb,itemB:itemB,cntB:cntB,note:$('tr-nt').value||''};
   if(eTrId) pay.id=eTrId;
@@ -1469,12 +1532,13 @@ function saveMaEv(){
   });
 }
 function delMaEv(){
-  if(!confirm('確定刪除此活動？')) return;ld(true);
+  if(!confirm('確定刪除此活動？底下物品和相冊也會一起刪除。')) return;ld(true);
   apiXHR('deleteEvent',{id:eMaEvId},function(err){
     ld(false);
     if(err){toast('❌ '+err.message);return;}
     E=E.filter(function(e){return e.id!==eMaEvId;});
     IT=IT.filter(function(x){return x.eventId!==eMaEvId;});
+    AL=AL.filter(function(a){return a.eventId!==eMaEvId;});
     saveCache();cp('pp-maEvEd');rMaEvL();rEv();updSC();toast('✓ 已刪除');
   });
 }
