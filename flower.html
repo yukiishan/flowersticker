@@ -684,7 +684,7 @@ var evF=null,dtEvId=null,curCat='all';
 var eEvId=null,eItId=null,eGrId=null,eTrId=null,eMaEvId=null;
 var eEvUpdAt='',eItUpdAt='',eGrUpdAt='',eTrUpdAt='',eMaEvUpdAt='';
 var itSt=0,unS={},exS={};
-var syncing=false,trF=null,grF=null;
+var syncing=false,trF=null,grF=null,isSaving=false;
 
 // ── localStorage ──
 function lsS(k,v){try{localStorage.setItem('xm_'+k,JSON.stringify(v));}catch(e){}}
@@ -827,6 +827,8 @@ function fetchAll(cb){
     });
     saveCache();
     setSS('ok');
+    // 儲存進行中時，不覆蓋 local state
+    if(isSaving){if(cb)cb(false);return;}
     if(cb) cb(true);
   });
 }
@@ -845,8 +847,10 @@ function startApp(){
   loadCache();
   renderAll();
   ld(false);
-  // 自動同步
-  fetchAll(function(ok){if(ok) renderAll();});
+  // 延遲 1.5 秒再自動同步，避免覆蓋剛儲存的資料
+  setTimeout(function(){
+    fetchAll(function(ok){if(ok) renderAll();});
+  }, 1500);
 }
 function renderAll(){rEv();rGr();renderCal();updSC();refreshSels();}
 
@@ -1044,10 +1048,12 @@ function saveIt(){
   var extra=Object.keys(exS);
   var pay={eventId:dtEvId,name:nm,albumId:$('it-al').value,stars:itSt||'',owned:owned,extra:extra};
   if(eItId){pay.id=eItId;pay.updatedAt=eItUpdAt;}
+  isSaving=true;
   ld(true);
   apiXHR('saveItem',pay,function(err,r){
     ld(false);
-    if(err){ld(false);handleSaveErr(err);return;}
+    isSaving=false;
+    if(err){handleSaveErr(err);return;}
     if(!eItId){
       IT.push({id:r.id,eventId:pay.eventId,name:pay.name,albumId:pay.albumId,stars:pay.stars,owned:owned,extra:extra,updatedAt:r.updatedAt||''});
     }else{
