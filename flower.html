@@ -146,6 +146,8 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
 .tr{background:var(--rose-bg);color:var(--rose-tx)}
 .tg{background:var(--green-bg);color:var(--green-tx)}
 /* slide panel */
+.itpk-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--sf);border:1px solid var(--bd);cursor:pointer;touch-action:manipulation}
+.itpk-row:active{background:var(--accent-bg)}
 .pg-panel{
   position:fixed;top:0;left:0;right:0;bottom:0;
   background:var(--bg);z-index:950;
@@ -542,10 +544,15 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
         </div>
       </div>
       <div class="fr"><div class="fl">交換物品 A</div>
-        <div class="combo">
-          <select id="tr-ias" class="fse" onchange="onIAS()"><option value="">-- 從清單選 --</option></select>
-          <div class="combo-or">─ 或手動輸入 ─</div>
-          <input id="tr-iat" class="fi" placeholder="手動輸入物品名稱">
+        <div style="position:relative">
+          <div style="display:flex;gap:7px;align-items:center">
+            <input id="tr-iat" class="fi" placeholder="輸入名稱搜尋…" autocomplete="off"
+              oninput="itPickFilter('A')" onfocus="itPickFilter('A')"
+              style="flex:1">
+            <button type="button" onclick="openItPicker('A')"
+              style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:6px 11px;font-size:12px;color:var(--tx2);cursor:pointer;white-space:nowrap;font-family:inherit;flex-shrink:0;touch-action:manipulation">選擇</button>
+          </div>
+          <div id="tr-iat-dd" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--sf);border:1px solid var(--bd);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:500;max-height:180px;overflow-y:auto;margin-top:3px"></div>
         </div>
       </div>
       <div class="fr"><div class="fl">第幾次 A</div><div class="fb"><select id="tr-ca" class="fse"><option value="1">第 1 次</option><option value="2">第 2 次</option><option value="3">第 3 次</option></select></div></div>
@@ -560,10 +567,15 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
         </div>
       </div>
       <div class="fr"><div class="fl">交換物品 B</div>
-        <div class="combo">
-          <select id="tr-ibs" class="fse" onchange="onIBS()"><option value="">-- 從清單選 --</option></select>
-          <div class="combo-or">─ 或手動輸入 ─</div>
-          <input id="tr-ibt" class="fi" placeholder="手動輸入物品名稱">
+        <div style="position:relative">
+          <div style="display:flex;gap:7px;align-items:center">
+            <input id="tr-ibt" class="fi" placeholder="輸入名稱搜尋…" autocomplete="off"
+              oninput="itPickFilter('B')" onfocus="itPickFilter('B')"
+              style="flex:1">
+            <button type="button" onclick="openItPicker('B')"
+              style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:6px 11px;font-size:12px;color:var(--tx2);cursor:pointer;white-space:nowrap;font-family:inherit;flex-shrink:0;touch-action:manipulation">選擇</button>
+          </div>
+          <div id="tr-ibt-dd" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--sf);border:1px solid var(--bd);border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:500;max-height:180px;overflow-y:auto;margin-top:3px"></div>
         </div>
       </div>
       <div class="fr"><div class="fl">第幾次 B</div><div class="fb"><select id="tr-cb" class="fse"><option value="1">第 1 次</option><option value="2">第 2 次</option><option value="3">第 3 次</option></select></div></div>
@@ -1316,35 +1328,123 @@ function openTrEdit(id,prefill){
     var mbInMB=savedMB?MB.filter(function(m){return m.name===savedMB;}).length>0:false;
     if(mbInMB){$('tr-mb').value=savedMB;$('tr-mb-txt').value='';}
     else{$('tr-mb').value='';$('tr-mb-txt').value=savedMB;}
-    // 物品 A/B
-    var savedA=t?t.itemA||'':'';
-    var savedB=t?t.itemB||'':'';
-    var sA=$('tr-ias'),sB=$('tr-ibs');
-    var matchA=false,matchB=false;
-    for(var i=0;i<sA.options.length;i++){if(sA.options[i].text===savedA){sA.selectedIndex=i;matchA=true;break;}}
-    if(!matchA){sA.value='';$('tr-iat').value=savedA;}else{$('tr-iat').value='';}
-    for(var i=0;i<sB.options.length;i++){if(sB.options[i].text===savedB){sB.selectedIndex=i;matchB=true;break;}}
-    if(!matchB){sB.value='';$('tr-ibt').value=savedB;}else{$('tr-ibt').value='';}
+    // 物品 A/B 直接填入輸入框
+    $('tr-iat').value=t?t.itemA||'':'';
+    $('tr-ibt').value=t?t.itemB||'':'';
   },80);
   if(!t){
     $('tr-ma').value='';$('tr-ma-txt').value='';
     $('tr-mb').value='';$('tr-mb-txt').value='';
-    $('tr-ias').value='';$('tr-iat').value='';
-    $('tr-ibs').value='';$('tr-ibt').value='';
+    $('tr-iat').value='';$('tr-ibt').value='';
   }
+  itPickClose();
   op('pp-trEd');
 }
 function onTrEv(){
-  var eid=$('tr-ev').value;
-  // 未選活動時不顯示物品，避免殘留已刪活動的品項
-  var its=eid?IT.filter(function(x){return x.eventId===eid;}):[];
-  var opts='<option value="">-- 從清單選 --</option>';
-  for(var i=0;i<its.length;i++) opts+='<option value="'+its[i].id+'">'+sf(its[i].name)+'</option>';
-  $('tr-ias').innerHTML=opts;
-  $('tr-ibs').innerHTML=opts;
+  // 活動切換時清除物品輸入和 dropdown（select 已移除，改用 picker）
+  $('tr-iat').value='';$('tr-ibt').value='';
+  itPickClose();
 }
-function onIAS(){if($('tr-ias').value)$('tr-iat').value='';}
-function onIBS(){if($('tr-ibs').value)$('tr-ibt').value='';}
+// onIAS/onIBS replaced by itPickFilter/openItPicker
+// ── 交換物品選擇器（搜尋輸入 + 底部 picker）──
+function itPickFilter(side){
+  var inputId = side==='A' ? 'tr-iat' : 'tr-ibt';
+  var ddId    = side==='A' ? 'tr-iat-dd' : 'tr-ibt-dd';
+  var inp = $(inputId), dd = $(ddId);
+  if(!inp||!dd) return;
+  var q = inp.value.replace(/^\s+|\s+$/g,'').toLowerCase();
+  var eid = $('tr-ev').value;
+  var its = eid ? IT.filter(function(x){return x.eventId===eid;}) : IT;
+  var filtered = q ? its.filter(function(x){return x.name.toLowerCase().indexOf(q)>=0;}) : its;
+  if(!filtered.length){dd.style.display='none';return;}
+  // 用 createElement 避免 onclick 字串引號問題
+  dd.innerHTML='';
+  var max=Math.min(filtered.length,20);
+  for(var i=0;i<max;i++){
+    var row=document.createElement('div');
+    row.style.cssText='padding:10px 12px;font-size:14px;color:var(--tx);cursor:pointer;border-bottom:1px solid var(--bd)';
+    row.textContent=filtered[i].name;
+    (function(name,s){
+      row.addEventListener('mousedown',function(e){e.preventDefault();});
+      row.addEventListener('click',function(){pickItItem(s,name);});
+    })(filtered[i].name, side);
+    dd.appendChild(row);
+  }
+  dd.style.display='block';
+}
+function pickItItem(side,name){
+  var inputId = side==='A' ? 'tr-iat' : 'tr-ibt';
+  var ddId    = side==='A' ? 'tr-iat-dd' : 'tr-ibt-dd';
+  $(inputId).value=name;
+  $(ddId).style.display='none';
+}
+function itPickClose(){
+  var ddA=$('tr-iat-dd'),ddB=$('tr-ibt-dd');
+  if(ddA) ddA.style.display='none';
+  if(ddB) ddB.style.display='none';
+}
+function openItPicker(side){
+  var eid=$('tr-ev').value;
+  var its=eid?IT.filter(function(x){return x.eventId===eid;}):IT;
+  var title=side==='A'?'選擇交換物品 A':'選擇交換物品 B';
+  var inputId=side==='A'?'tr-iat':'tr-ibt';
+  // 移除舊的 picker
+  var old=document.getElementById('itPickerOv');if(old)old.remove();
+  var ov=document.createElement('div');
+  ov.id='itPickerOv';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1050;display:flex;align-items:flex-end';
+  var listHtml='';
+  for(var i=0;i<its.length;i++){
+    var nm=sf(its[i].name);
+    var alb=AL.filter(function(a){return a.id===its[i].albumId;})[0];
+    var sub=alb?sf(alb.name):'';
+    listHtml+='<div class="itpk-row" data-name="'+its[i].name.replace(/"/g,'&quot;')+'">'
+      +'<div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--tx)">'+nm+'</div>'
+      +(sub?'<div style="font-size:11px;color:var(--tx3)">'+sub+'</div>':'')
+      +'</div>'
+      +'<span style="font-size:13px;color:var(--accent)">›</span></div>';
+  }
+  if(!listHtml) listHtml='<div style="text-align:center;padding:20px;color:var(--tx3);font-size:13px">請先選擇活動，或該活動尚無物品</div>';
+  ov.innerHTML='<div style="background:var(--sf);border-radius:16px 16px 0 0;width:100%;max-height:78vh;display:flex;flex-direction:column;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))">'
+    +'<div style="font-size:15px;font-weight:700;color:var(--tx);margin-bottom:10px">'+sf(title)+'</div>'
+    +'<input id="itPickerSrch" placeholder="\uD83D\uDD0D \u641C\u5C0B\u7269\u54C1\u540D\u7A31\u2026" '
+    +'style="padding:9px 12px;border:1px solid var(--bd);border-radius:10px;font-size:14px;margin-bottom:10px;font-family:inherit;background:var(--sf2);color:var(--tx);outline:none;width:100%;box-sizing:border-box">'
+    +'<div id="itPickerList" style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:5px">'+listHtml+'</div>'
+    +'<button id="itPickerClose" style="width:100%;margin-top:10px;padding:12px;border-radius:10px;background:var(--sf2);border:1px solid var(--bd);font-size:14px;cursor:pointer;font-family:inherit;color:var(--tx2);touch-action:manipulation">\u53D6\u6D88</button>'
+    +'</div>'
+  ov.addEventListener('click',function(e){if(e.target===ov)ov.remove();});
+  // 綁定列表點擊
+  ov.addEventListener('click',function(e){
+    var row=e.target.closest('.itpk-row');
+    if(!row)return;
+    var nm=row.getAttribute('data-name');
+    if(!nm)return;
+    $(inputId).value=nm;
+    ov.remove();
+  });
+  document.body.appendChild(ov);
+  // 取消按鈕
+  var closeBtn=document.getElementById('itPickerClose');
+  if(closeBtn) closeBtn.addEventListener('click',function(){ov.remove();});
+  // 搜尋過濾
+  var srch=document.getElementById('itPickerSrch');
+  if(srch){
+    srch.addEventListener('input',function(){
+      var q=this.value.toLowerCase();
+      var rows=document.querySelectorAll('#itPickerList .itpk-row');
+      for(var i=0;i<rows.length;i++){
+        var nm=rows[i].getAttribute('data-name')||'';
+        rows[i].style.display=(!q||nm.toLowerCase().indexOf(q)>=0)?'':'none';
+      }
+    });
+    setTimeout(function(){srch.focus();},100);
+  }
+}
+// 點擊其他地方關閉 dropdown
+document.addEventListener('click',function(e){
+  if(!e.target.closest('#tr-iat')&&!e.target.closest('#tr-iat-dd')&&
+     !e.target.closest('#tr-ibt')&&!e.target.closest('#tr-ibt-dd')) itPickClose();
+});
 // 從下拉選成員時清空手動輸入，並自動帶入次數
 function onMAsel(){
   if($('tr-ma').value) $('tr-ma-txt').value='';
@@ -1392,10 +1492,9 @@ function autoFillCnt(selId,cntId){
   autoFillCntByName(getMemberName(selId,selId+'-txt'),cntId);
 }
 function getItName(selId,txtId){
-  var txt=$(txtId).value.replace(/^\s+|\s+$/g,'');if(txt) return txt;
-  var sel=$(selId);
-  if(sel.value&&sel.selectedIndex>0) return sel.options[sel.selectedIndex].text;
-  return '';
+  // selId 已廢棄，直接讀輸入框
+  var txt=$(txtId).value.replace(/^\s+|\s+$/g,'');
+  return txt;
 }
 function saveTr(){
   var dt=$('tr-dt').value;
@@ -1403,8 +1502,8 @@ function saveTr(){
   var mb=getMemberName('tr-mb','tr-mb-txt');
   if(!dt||!ma||!mb){toast('請填寫日期和雙方成員');return;}
   if(ma===mb){toast('成員 A 和 B 不能相同');return;}
-  var itemA=getItName('tr-ias','tr-iat');
-  var itemB=getItName('tr-ibs','tr-ibt');
+  var itemA=getItName('','tr-iat');
+  var itemB=getItName('','tr-ibt');
   var cntA=Number($('tr-ca').value)||1;
   var cntB=Number($('tr-cb').value)||1;
   // 次數驗證：只對維護成員（MB）計算，手動輸入的非維護成員不擋
