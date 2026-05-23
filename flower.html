@@ -1051,7 +1051,7 @@ function saveEv(){
   });
 }
 function delEv(){
-  if(!confirm('確定刪除此活動？底下物品和相冊也會一起刪除。')) return;
+  if(!confirm('確定刪除此活動？底下物品、相冊、畢業紀錄、交換紀錄也會一起刪除。')) return;
   isSaving=true;
   ld(true);
   apiXHR('deleteEvent',{id:eEvId,updatedAt:eEvUpdAt},function(err){
@@ -1060,6 +1060,8 @@ function delEv(){
     E=E.filter(function(e){return e.id!==eEvId;});
     IT=IT.filter(function(x){return x.eventId!==eEvId;});
     AL=AL.filter(function(a){return a.eventId!==eEvId;});
+    GR=GR.filter(function(g){return g.eventId!==eEvId;});
+    TR=TR.filter(function(t){return t.eventId!==eEvId;});
     saveCache();releaseSaving();cp('pp-evEd');renderAll();toast('✓ 已刪除');
   });
 }
@@ -1932,14 +1934,16 @@ function saveMaEv(){
   });
 }
 function delMaEv(){
-  if(!confirm('確定刪除此活動？底下物品和相冊也會一起刪除。')) return;ld(true);
+  if(!confirm('確定刪除此活動？底下物品、相冊、畢業紀錄、交換紀錄也會一起刪除。')) return;isSaving=true;ld(true);
   apiXHR('deleteEvent',{id:eMaEvId,updatedAt:eMaEvUpdAt},function(err){
     ld(false);
     if(err){isSaving=false;toast('❌ '+err.message);return;}
     E=E.filter(function(e){return e.id!==eMaEvId;});
     IT=IT.filter(function(x){return x.eventId!==eMaEvId;});
     AL=AL.filter(function(a){return a.eventId!==eMaEvId;});
-    saveCache();cp('pp-maEvEd');rMaEvL();rEv();updSC();toast('✓ 已刪除');
+    GR=GR.filter(function(g){return g.eventId!==eMaEvId;});
+    TR=TR.filter(function(t){return t.eventId!==eMaEvId;});
+    saveCache();releaseSaving();cp('pp-maEvEd');rMaEvL();rEv();updSC();toast('✓ 已刪除');
   });
 }
 function refreshSels(){
