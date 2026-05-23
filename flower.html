@@ -400,15 +400,40 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
       <div class="ps" id="grL"></div>
     </div>
 
-    <!-- PAGE 3 交換 -->
+    <!-- PAGE 3 交換清單 -->
     <div class="page" id="pg-tr">
       <div class="ph">
         <div class="ah">
-          <h1>交換日曆</h1>
+          <h1>交換紀錄</h1>
           <button class="hb" onclick="doSync()">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="23,4 23,10 17,10"/><polyline points="1,20 1,14 7,14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>同步
           </button>
           <button class="hb" onclick="openTrEdit(null,null)">＋</button>
+        </div>
+        <div class="fps" id="trP"></div>
+        <div style="padding:6px 13px 0;background:var(--sf)">
+          <div style="display:flex;gap:7px;align-items:center">
+            <input id="trSearch" class="fi" placeholder="🔍 搜尋成員/物品/備註…" oninput="renderTrList()" style="flex:1;background:var(--sf2);border-radius:9px;padding:8px 11px;font-size:14px">
+            <button onclick="openCalPicker()" title="日期篩選"
+              style="background:var(--sf2);border:1px solid var(--bd);border-radius:9px;padding:7px 10px;font-size:15px;cursor:pointer;flex-shrink:0;touch-action:manipulation">📅</button>
+          </div>
+          <div id="trDateFilter" style="display:none;padding:6px 0 4px;font-size:12px;color:var(--tx3);display:flex;align-items:center;gap:6px">
+            <span id="trDateLbl" style="color:var(--accent);font-weight:600"></span>
+            <button onclick="clearTrDate()" style="background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;padding:0;touch-action:manipulation">✕ 清除</button>
+          </div>
+        </div>
+      </div>
+      <div class="ps" id="trL"></div>
+    </div>
+
+        <!-- PAGE 3 行事曆 -->
+    <div class="page" id="pg-cal">
+      <div class="ph">
+        <div class="ah">
+          <h1>行事曆</h1>
+          <button class="hb" onclick="doSync()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="23,4 23,10 17,10"/><polyline points="1,20 1,14 7,14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>同步
+          </button>
         </div>
         <div class="cnav">
           <button class="cnb" onclick="calSh(-1)">◀</button>
@@ -418,7 +443,6 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
           </select>
           <button class="cnb" onclick="calSh(1)">▶</button>
         </div>
-        <div class="fps" id="trP"></div>
       </div>
       <div class="ps">
         <div style="padding:10px 12px">
@@ -460,6 +484,7 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
     <button class="tb on" id="tb-ev" onclick="goPage('ev')"><div class="tb-ic"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg></div>活動</button>
     <button class="tb" id="tb-gr" onclick="goPage('gr')"><div class="tb-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0112 0v2"/></svg></div>畢業</button>
     <button class="tb" id="tb-tr" onclick="goPage('tr')"><div class="tb-ic"><svg viewBox="0 0 24 24"><polyline points="17,1 21,5 17,9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7,23 3,19 7,15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg></div>交換</button>
+    <button class="tb" id="tb-cal" onclick="goPage('cal')"><div class="tb-ic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>行事曆</button>
     <button class="tb" id="tb-set" onclick="goPage('set')"><div class="tb-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg></div>設定</button>
   </div>
 </div>
@@ -701,7 +726,7 @@ var evF=null,dtEvId=null,curCat='all';
 var eEvId=null,eItId=null,eGrId=null,eTrId=null,eMaEvId=null;
 var eEvUpdAt='',eItUpdAt='',eGrUpdAt='',eTrUpdAt='',eMaEvUpdAt='';
 var itSt=0,unS={},exS={};
-var syncing=false,trF=null,grF=null,isSaving=false;
+var syncing=false,trF=null,grF=null,isSaving=false,trDateFilter=null;
 
 // ── localStorage ──
 function lsS(k,v){try{localStorage.setItem('xm_'+k,JSON.stringify(v));}catch(e){}}
@@ -918,7 +943,7 @@ function startApp(){
     if(!isSaving) fetchAll(function(ok){if(ok) renderAll();});
   }, 2000);
 }
-function renderAll(){rEv();rGr();renderCal();updSC();refreshSels();}
+function renderAll(){rEv();rGr();renderCal();renderTrList();updSC();refreshSels();}
 
 // ── panel helpers ──
 function op(id){$(id).classList.add('open');}
@@ -938,7 +963,8 @@ function goPage(tab){
   $('pg-'+tab).classList.add('active');
   var tb=$('tb-'+tab);
   if(tb) tb.classList.add('on');
-  if(tab==='tr') renderCal();
+  if(tab==='cal') renderCal();
+  if(tab==='tr') renderTrList();
 }
 
 // ══ PAGE 1: EVENTS ══
@@ -1252,6 +1278,120 @@ function initCal(){
   for(var i=cy-1;i<=cy+3;i++){var o=document.createElement('option');o.value=i;o.textContent=i+'年';y.appendChild(o);}
   y.value=cy;$('calM').value=new Date().getMonth()+1;
 }
+// ══ PAGE 3: 交換清單 ══
+function renderTrList(){
+  var el=$('trL');
+  if(!el) return;
+  // 更新 trP pills（活動篩選）
+  var p=$('trP');
+  if(p){
+    var revE3=E.slice().reverse();
+    var h='<div class="pill'+(trF===null?' on':'')+'" onclick="setTF(null)">全部活動</div>';
+      for(var i=0;i<revE3.length;i++) h+='<div class="pill'+(trF===revE3[i].id?' on':'')+'" onclick="setTF(\''+revE3[i].id+'\')">'+sf(revE3[i].name)+'</div>';
+    p.innerHTML=h;
+  }
+  // 篩選資料
+  var list=TR.slice();
+  // 活動篩選
+  if(trF) list=list.filter(function(t){return t.eventId===trF;});
+  // 日期篩選
+  if(trDateFilter) list=list.filter(function(t){return t.tradeDate===trDateFilter;});
+  // 搜尋篩選
+  var q=($('trSearch')||{}).value;
+  if(q) q=q.replace(/^\s+|\s+$/g,'').toLowerCase();
+  if(q) list=list.filter(function(t){
+    return (t.memberA||'').toLowerCase().indexOf(q)>=0||
+           (t.memberB||'').toLowerCase().indexOf(q)>=0||
+           (t.itemA||'').toLowerCase().indexOf(q)>=0||
+           (t.itemB||'').toLowerCase().indexOf(q)>=0||
+           (t.note||'').toLowerCase().indexOf(q)>=0||
+           (t.tradeDate||'').indexOf(q)>=0;
+  });
+  // 依日期降序排列（最新在前）
+  list=list.slice().sort(function(a,b){return (b.tradeDate||'')>(a.tradeDate||'')?1:-1;});
+  if(!list.length){
+    el.innerHTML='<div class="em"><svg viewBox="0 0 24 24"><polyline points="17,1 21,5 17,9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7,23 3,19 7,15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg><p>尚無交換紀錄</p></div>';
+    return;
+  }
+  var out='';
+  var curDate='';
+  for(var i=0;i<list.length;i++){
+    var t=list[i];
+    var ev=E.filter(function(e){return e.id===t.eventId;})[0];
+    if(t.tradeDate!==curDate){
+      curDate=t.tradeDate;
+      out+='<div style="padding:8px 13px 4px;font-size:11px;font-weight:700;color:var(--tx3);letter-spacing:.5px">'+fmtDate(curDate)+'</div>';
+    }
+    html+='<div class="trc" onclick="openTrEdit(\''+t.id+'\',null)">'
+      +'<div style="font-size:10px;color:var(--tx3);margin-bottom:3px">'+(ev?sf(ev.name):'')+'</div>'
+      +'<div style="font-size:14px;font-weight:700;color:var(--tx)">'+sf(t.memberA)+'(第'+((t.cntA)||1)+'次) ⇄ '+sf(t.memberB)+'(第'+((t.cntB)||1)+'次)</div>'
+      +((t.itemA||t.itemB)?'<div style="font-size:11px;color:var(--tx2);margin-top:2px">'+sf(t.itemA||'')+(t.itemA&&t.itemB?' / ':'')+sf(t.itemB||'')+'</div>':'')
+      +(t.note?'<div style="font-size:11px;color:var(--tx3);margin-top:2px">備：'+sf(t.note)+'</div>':'')
+      +'</div>';
+  }
+  el.innerHTML=out;
+}
+function openCalPicker(){
+  var ov=document.createElement('div');
+  ov.className='bso';
+  var dates={};
+  for(var i=0;i<TR.length;i++){if(TR[i].tradeDate) dates[TR[i].tradeDate]=true;}
+  var dlist=Object.keys(dates).sort().reverse();
+  // Build bsw structure via DOM
+  var bsw=document.createElement('div');bsw.className='bsw';
+  var bsh=document.createElement('div');bsh.className='bsh';
+  var bst=document.createElement('div');bst.className='bst';bst.textContent='日期篩選';
+  var bsc=document.createElement('button');bsc.className='bsc';bsc.textContent='✕';
+  bsc.addEventListener('click',function(){rmBS();});
+  bsh.appendChild(bst);bsh.appendChild(bsc);
+  var bsb=document.createElement('div');bsb.className='bsb';
+  if(!dlist.length){
+    var emp=document.createElement('div');
+    emp.style.cssText='color:var(--tx3);font-size:13px;text-align:center;padding:14px 0';
+    emp.textContent='尚無交換紀錄';
+    bsb.appendChild(emp);
+  }else{
+    for(var j=0;j<dlist.length;j++){
+      var cnt=TR.filter(function(t){return t.tradeDate===dlist[j];}).length;
+      var isSel=dlist[j]===trDateFilter;
+      var row=document.createElement('div');
+      row.style.cssText='padding:11px 13px;border-radius:10px;border:1px solid '+(isSel?'var(--accent)':'var(--bd)')+';background:'+(isSel?'var(--accent-bg)':'var(--sf)')+';margin-bottom:6px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;touch-action:manipulation';
+      var lbl=document.createElement('span');
+      lbl.style.cssText='font-size:14px;font-weight:'+(isSel?'700':'400')+';color:'+(isSel?'var(--accent)':'var(--tx)')+'';
+      lbl.textContent=fmtDate(dlist[j]);
+      var cntEl=document.createElement('span');
+      cntEl.style.cssText='font-size:11px;color:var(--tx3)';
+      cntEl.textContent=cnt+' 筆';
+      row.appendChild(lbl);row.appendChild(cntEl);
+      (function(d){row.addEventListener('click',function(){setTrDate(d);});})(dlist[j]);
+      bsb.appendChild(row);
+    }
+  }
+  var clrBtn=document.createElement('button');
+  clrBtn.style.cssText='width:100%;margin-top:8px;padding:11px;border-radius:10px;background:var(--sf2);border:1px solid var(--bd);font-size:13px;cursor:pointer;font-family:inherit;color:var(--tx2);touch-action:manipulation';
+  clrBtn.textContent='清除日期篩選';
+  clrBtn.addEventListener('click',function(){setTrDate(null);});
+  bsb.appendChild(clrBtn);
+  bsw.appendChild(bsh);bsw.appendChild(bsb);
+  ov.appendChild(bsw);
+  ov.addEventListener('click',function(e){if(e.target===ov)rmBS();});
+  document.body.appendChild(ov);
+}
+function setTrDate(date){
+  trDateFilter=date;
+  rmBS();
+  var lbl=$('trDateLbl');
+  var row=$('trDateFilter');
+  if(date){
+    if(lbl) lbl.textContent='📅 '+fmtDate(date);
+    if(row) row.style.display='flex';
+  }else{
+    if(row) row.style.display='none';
+  }
+  renderTrList();
+}
+function clearTrDate(){setTrDate(null);}
+// ══ PAGE 4: 行事曆 ══
 function renderCal(){
   initCal();
   var p=$('trP');
@@ -1284,7 +1424,7 @@ function renderCal(){
   $('calg').innerHTML=cs;
 }
 function calSh(d){var m=Number($('calM').value)+d,y=Number($('calY').value);if(m<1){m=12;y--;}else if(m>12){m=1;y++;}$('calM').value=m;$('calY').value=y;renderCal();}
-function setTF(id){trF=id;renderCal();}
+function setTF(id){trF=id;renderCal();renderTrList();}
 function openCD(ds){
   var tl=TR.filter(function(t){return t.tradeDate===ds;});
   var html='<div style="font-weight:700;font-size:14px;color:var(--tx);margin-bottom:10px">'+ds+'</div>';
@@ -1558,7 +1698,7 @@ function saveTr(){
         t.memberB=pay.memberB;t.itemB=pay.itemB;t.cntB=pay.cntB;t.note=pay.note;t.updatedAt=r.updatedAt||'';}
     }
     eTrUpdAt=r.updatedAt||'';showUpdAt('uat-trEd',eTrUpdAt);
-    saveCache();releaseSaving();cp('pp-trEd');renderCal();toast('✓ 交換紀錄已儲存');
+    saveCache();releaseSaving();cp('pp-trEd');renderCal();renderTrList();toast('✓ 交換紀錄已儲存');
   });
 }
 function delTr(){
@@ -1569,7 +1709,7 @@ function delTr(){
     ld(false);
     if(err){isSaving=false;toast('❌ '+err.message);return;}
     TR=TR.filter(function(x){return x.id!==eTrId;});
-    saveCache();releaseSaving();cp('pp-trEd');renderCal();toast('✓ 已刪除');
+    saveCache();releaseSaving();cp('pp-trEd');renderCal();renderTrList();toast('✓ 已刪除');
   });
 }
 
