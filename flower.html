@@ -413,7 +413,10 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
         <div class="fps" id="trP"></div>
         <div style="padding:6px 13px 0;background:var(--sf)">
           <div style="display:flex;gap:7px;align-items:center">
-            <input id="trSearch" class="fi" placeholder="🔍 搜尋成員/物品/備註…" oninput="renderTrList()" style="flex:1;background:var(--sf2);border-radius:9px;padding:8px 11px;font-size:14px">
+            <div style="flex:1;position:relative">
+              <input id="trSearch" class="fi" placeholder="🔍 搜尋成員/物品/備註…" oninput="renderTrList()" style="width:100%;background:var(--sf2);border-radius:9px;padding:8px 32px 8px 11px;font-size:14px">
+              <button id="trSearchClear" onclick="clearTrSearch()" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--tx3);font-size:15px;cursor:pointer;padding:0;line-height:1;touch-action:manipulation">✕</button>
+            </div>
             <button onclick="openCalPicker()" title="日期篩選"
               style="background:var(--sf2);border:1px solid var(--bd);border-radius:9px;padding:7px 10px;font-size:15px;cursor:pointer;flex-shrink:0;touch-action:manipulation">📅</button>
           </div>
@@ -1320,6 +1323,9 @@ function renderTrList(){
   // 搜尋篩選
   var q=($('trSearch')||{}).value;
   if(q) q=q.replace(/^\s+|\s+$/g,'').toLowerCase();
+  // 顯示/隱藏搜尋欄的 X 清除鈕
+  var clearBtn=$('trSearchClear');
+  if(clearBtn) clearBtn.style.display=q?'':'none';
   if(q) list=list.filter(function(t){
     return (t.memberA||'').toLowerCase().indexOf(q)>=0||
            (t.memberB||'').toLowerCase().indexOf(q)>=0||
@@ -1346,7 +1352,7 @@ function renderTrList(){
     out+='<div class="trc" onclick="openTrEdit(\''+t.id+'\',null)" style="margin:0 13px 6px">'
       +'<div style="font-size:10px;color:var(--tx3);margin-bottom:3px">'+(ev?sf(ev.name):'')+'</div>'
       +'<div style="font-size:14px;font-weight:700;color:var(--tx)">'+sf(t.memberA)+'(第'+((t.cntA)||1)+'次) ⇄ '+sf(t.memberB)+'(第'+((t.cntB)||1)+'次)</div>'
-      +((t.itemA||t.itemB)?'<div style="font-size:11px;color:var(--tx2);margin-top:2px">'+sf(t.itemA||'')+(t.itemA&&t.itemB?' / ':'')+sf(t.itemB||'')+'</div>':'')
+      +((t.itemA||t.itemB)?'<div style="font-size:11px;color:var(--tx2);margin-top:2px">'+(t.itemA?sf(t.itemA)+(getItemStars(t.itemA)?' <span style="color:var(--amber);font-size:10px">'+getItemStars(t.itemA)+'</span>':''):'')+(t.itemA&&t.itemB?' / ':'')+(t.itemB?sf(t.itemB)+(getItemStars(t.itemB)?' <span style="color:var(--amber);font-size:10px">'+getItemStars(t.itemB)+'</span>':''):'')+'</div>':'')
       +(t.note?'<div style="font-size:11px;color:var(--tx3);margin-top:2px">備：'+sf(t.note)+'</div>':'')
       +'</div>';
   }
@@ -1411,7 +1417,22 @@ function setTrDate(date){
   }
   renderTrList();
 }
+// 依物品名稱取得星級字串（供交換明細顯示用）
+function getItemStars(itemName){
+  if(!itemName) return '';
+  var it=IT.filter(function(x){return x.name===itemName;})[0];
+  if(!it||!it.stars) return '';
+  var n=Number(it.stars)||0;
+  return n?new Array(n+1).join('★'):'';
+}
 function clearTrDate(){setTrDate(null);}
+function clearTrSearch(){
+  var inp=$('trSearch');
+  if(inp) inp.value='';
+  var btn=$('trSearchClear');
+  if(btn) btn.style.display='none';
+  renderTrList();
+}
 // ══ PAGE 4: 行事曆 ══
 function renderCal(){
   initCal();
@@ -1456,7 +1477,7 @@ function openCD(ds){
     html+='<div class="trc" onclick="rmBS();openTrEdit(\''+t.id+'\',null)">'
       +'<div style="font-size:10px;color:var(--tx3);margin-bottom:3px">'+(ev?sf(ev.name):'')+'</div>'
       +'<div style="font-size:14px;font-weight:700;color:var(--tx)">'+sf(t.memberA)+'(第'+((t.cntA)||1)+'次) ⇄ '+sf(t.memberB)+'(第'+((t.cntB)||1)+'次)</div>'
-      +((t.itemA||t.itemB)?'<div style="font-size:11px;color:var(--tx2);margin-top:2px">'+sf(t.itemA||'')+(t.itemA&&t.itemB?' / ':'')+sf(t.itemB||'')+'</div>':'')
+      +((t.itemA||t.itemB)?'<div style="font-size:11px;color:var(--tx2);margin-top:2px">'+(t.itemA?sf(t.itemA)+(getItemStars(t.itemA)?' <span style="color:var(--amber);font-size:10px">'+getItemStars(t.itemA)+'</span>':''):'')+(t.itemA&&t.itemB?' / ':'')+(t.itemB?sf(t.itemB)+(getItemStars(t.itemB)?' <span style="color:var(--amber);font-size:10px">'+getItemStars(t.itemB)+'</span>':''):'')+'</div>':'')
       +(t.note?'<div style="font-size:11px;color:var(--tx3);margin-top:2px">備：'+sf(t.note)+'</div>':'')
       +'</div>';
   }
