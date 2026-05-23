@@ -1193,7 +1193,14 @@ function delIt(){
   ld(true);
   apiXHR('deleteItem',{id:eItId,updatedAt:eItUpdAt},function(err){
     ld(false);
-    if(err){isSaving=false;toast('❌ '+err.message);return;}
+    if(err){
+      isSaving=false;
+      if(err.message&&err.message.indexOf('not found')>=0){
+        IT=IT.filter(function(x){return x.id!==eItId;});
+        saveCache();cp('pp-itEd');rItems();rEv();toast('✓ 已從本地移除');
+      }else{toast('❌ '+err.message);}
+      return;
+    }
     IT=IT.filter(function(x){return x.id!==eItId;});
     saveCache();releaseSaving();cp('pp-itEd');rItems();rEv();toast('✓ 已刪除');
   });
@@ -1755,7 +1762,18 @@ function delTr(){
   ld(true);
   apiXHR('deleteTrade',{id:eTrId,updatedAt:eTrUpdAt},function(err){
     ld(false);
-    if(err){isSaving=false;toast('❌ '+err.message);return;}
+    if(err){
+      isSaving=false;
+      // 若試算表已無此筆（Trade not found），強制從本地移除
+      if(err.message&&err.message.indexOf('not found')>=0){
+        TR=TR.filter(function(x){return x.id!==eTrId;});
+        saveCache();cp('pp-trEd');renderCal();renderTrList();
+        toast('✓ 已從本地移除（試算表已無此筆）');
+      }else{
+        toast('❌ '+err.message);
+      }
+      return;
+    }
     TR=TR.filter(function(x){return x.id!==eTrId;});
     saveCache();releaseSaving();cp('pp-trEd');renderCal();renderTrList();toast('✓ 已刪除');
   });
