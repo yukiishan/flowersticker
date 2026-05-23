@@ -865,9 +865,15 @@ function fetchAll(cb){
       }
     }
 
-    E = (d.events || []).map(function(ev){
+    // 合併本地剛新增但雲端可能已有的活動（同 id 以雲端為準）
+    var cloudEvents = (d.events || []).map(function(ev){
       return {id:ev.id,name:ev.name,startDate:ev.startDate,endDate:ev.endDate,updatedAt:ev.updatedAt||''};
     });
+    // 找本地有但雲端沒有的（保留）
+    var cloudEvMap={};
+    for(var ce=0;ce<cloudEvents.length;ce++) cloudEvMap[cloudEvents[ce].id]=true;
+    var localOnlyEvents=E.filter(function(ev){return !cloudEvMap[ev.id];});
+    E = cloudEvents.concat(localOnlyEvents);
 
     // 用雲端資料重建 IT，再補回本地多出的物品
     IT = [];
@@ -883,9 +889,13 @@ function fetchAll(cb){
     }
 
     MB = (d.members && d.members.length) ? d.members : defMB();
-    AL = (d.albums || []).map(function(a){
+    var cloudAlbums = (d.albums || []).map(function(a){
       return {id:a.id, name:a.name, eventId:a.eventId||''};
     });
+    var cloudAlMap={};
+    for(var ca=0;ca<cloudAlbums.length;ca++) cloudAlMap[cloudAlbums[ca].id]=true;
+    var localOnlyAlbums=AL.filter(function(a){return !cloudAlMap[a.id];});
+    AL = cloudAlbums.concat(localOnlyAlbums);
 
     // 同樣對 TR/GR 做智慧合併
     var cloudTrades = d.trades || [];
@@ -1124,14 +1134,25 @@ function rMC(){
   for(var i=0;i<MB.length;i++){
     var m=MB[i];
     uH+='<div class="mc'+(unS[m.name]?' on':'')+'" onclick="togU(\''+m.name+'\')"><div class="mcb">✓</div><span class="mcn">'+sf(m.name)+'</span></div>';
-    eH+='<div class="mc'+(exS[m.name]?' on':'')+'" onclick="togE(\''+m.name+'\')"><div class="mcb">✓</div><span class="mcn">'+sf(m.name)+'</span></div>';
+    // 多餘：只有已持有（unS 裡沒有標記=已持有）才可點
+    var isOwned=!unS[m.name];
+    if(isOwned){
+    var isOwned=!unS[m.name];
+    if(isOwned){
+  eH+='<div class="mc'+(exS[m.name]?' on':'')+'" onclick="togE(\''+m.name+'\')"><div class="mcb">✓</div><span class="mcn">'+sf(m.name)+'</span></div>';
+    }else{
+      eH+='<div class="mc" style="opacity:.35;pointer-events:none"><div class="mcb">&#x2713;</div><span class="mcn">'+sf(m.name)+'</span></div>';
+    }
+    }else{
+      eH+='<div class="mc" style="opacity:.35;pointer-events:none"><div class="mcb">✓</div><span class="mcn">'+sf(m.name)+'</span></div>';
+    }
   }
   $('unG').innerHTML=uH;$('exG').innerHTML=eH;
   var ow=MB.filter(function(m){return!unS[m.name];});
   $('owD').innerHTML=ow.length?ow.map(function(m){return'<span style="padding:2px 8px;border-radius:99px;background:var(--green-bg);color:var(--green-tx);font-size:12px;font-weight:600">'+sf(m.name)+'</span>';}).join(''):'<span style="font-size:12px;color:var(--tx3)">（無人持有）</span>';
 }
 function togU(n){if(unS[n])delete unS[n];else unS[n]=true;rMC();}
-function togE(n){if(exS[n])delete exS[n];else exS[n]=true;rMC();}
+function togE(n){if(unS[n]) return; if(exS[n])delete exS[n];else exS[n]=true;rMC();}
 function setStar(n){
   itSt=n;
   var bs=document.querySelectorAll('.stbtn');
@@ -1204,7 +1225,7 @@ function rGr(){
     for(var j=0;j<recs.length;j++){
       var g=recs[j];
       var m=MB.filter(function(mb){return mb.id===g.memberId||mb.name===g.memberName;})[0];
-      out+='<div class="grw" onclick="openGrEdit(\''+g.id+'\')"><div class="gav" style="background:'+(m?m.color+'20':'var(--accent-bg)')+';color:'+(m?m.color:'var(--accent)')+'">'+sf((g.memberName||'?')[0])+'</div><div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--tx)">'+sf(g.memberName)+'</div><div style="font-size:11px;color:var(--tx3)">畢業：'+fmtDate(g.gradDate||'')+'</div></div><span style="font-size:16px;color:var(--tx3)">›</span></div>';
+      out+='<div class="grw" onclick="openGrEdit(\''+g.id+'\')"><div class="gav" style="background:'+(m?m.color+'20':'var(--accent-bg)')+';color:'+(m?m.color:'var(--accent)')+'">'+sf((g.memberName||'?')[0])+'</div><div style="flex:1"><div style="font-size:14px;font-weight:700;color:var(--tx)">'+sf(g.memberName)+(ev?'<span style="font-size:11px;font-weight:400;color:var(--tx3)"> ('+sf(ev.name)+')</span>':'')+'</div><div style="font-size:11px;color:var(--tx3)">畢業：'+fmtDate(g.gradDate||'')+'</div></div><span style="font-size:16px;color:var(--tx3)">›</span></div>';
     }
   }
   el.innerHTML=out;
@@ -1322,7 +1343,7 @@ function renderTrList(){
       curDate=t.tradeDate;
       out+='<div style="padding:8px 13px 4px;font-size:11px;font-weight:700;color:var(--tx3);letter-spacing:.5px">'+fmtDate(curDate)+'</div>';
     }
-    html+='<div class="trc" onclick="openTrEdit(\''+t.id+'\',null)">'
+    out+='<div class="trc" onclick="openTrEdit(\''+t.id+'\',null)" style="margin:0 13px 6px">'
       +'<div style="font-size:10px;color:var(--tx3);margin-bottom:3px">'+(ev?sf(ev.name):'')+'</div>'
       +'<div style="font-size:14px;font-weight:700;color:var(--tx)">'+sf(t.memberA)+'(第'+((t.cntA)||1)+'次) ⇄ '+sf(t.memberB)+'(第'+((t.cntB)||1)+'次)</div>'
       +((t.itemA||t.itemB)?'<div style="font-size:11px;color:var(--tx2);margin-top:2px">'+sf(t.itemA||'')+(t.itemA&&t.itemB?' / ':'')+sf(t.itemB||'')+'</div>':'')
@@ -1546,10 +1567,14 @@ function openItPicker(side){
   for(var i=0;i<its.length;i++){
     var nm=sf(its[i].name);
     var alb=AL.filter(function(a){return a.id===its[i].albumId;})[0];
-    var sub=alb?sf(alb.name):'';
+    var albName=alb?sf(alb.name):'';
+    var starsNum=Number(its[i].stars)||0;
+    var starsStr=starsNum?new Array(starsNum+1).join('★'):'';
     listHtml+='<div class="itpk-row" data-name="'+its[i].name.replace(/"/g,'&quot;')+'">'
-      +'<div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--tx)">'+nm+'</div>'
-      +(sub?'<div style="font-size:11px;color:var(--tx3)">'+sub+'</div>':'')
+      +'<div style="flex:1">'
+      +'<div style="font-size:14px;font-weight:600;color:var(--tx)">'+nm
+      +(starsStr?' <span style="color:var(--amber);font-size:11px">'+starsStr+'</span>':'')+'</div>'
+      +(albName?'<div style="font-size:11px;color:var(--tx3)">'+albName+'</div>':'')
       +'</div>'
       +'<span style="font-size:13px;color:var(--accent)">›</span></div>';
   }
