@@ -403,7 +403,10 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
         <div class="srow"><div class="sdot" id="sdot"></div><span id="slbl">就緒</span><span id="stm" style="margin-left:auto;font-size:10px"></span></div>
         <div class="fps" id="evP"></div>
         <div style="padding:6px 13px;background:var(--sf);border-bottom:1px solid var(--bd)">
-          <input id="evSearch" class="fi" placeholder="🔍 搜尋活動…" oninput="rEv()" style="background:var(--sf2);border-radius:9px;padding:8px 11px;width:100%;font-size:14px">
+          <div style="position:relative">
+          <input id="evSearch" class="fi" placeholder="🔍 搜尋活動…" oninput="onEvSearch()" style="background:var(--sf2);border-radius:9px;padding:8px 32px 8px 11px;width:100%;font-size:14px">
+          <button id="evSearchClear" onclick="clearEvSearch()" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--tx3);font-size:15px;cursor:pointer;padding:0;line-height:1;touch-action:manipulation">✕</button>
+        </div>
         </div>
       </div>
       <div class="ps"><div class="cl" id="evL"></div></div>
@@ -539,7 +542,10 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
   <div style="background:var(--sf);border-bottom:1px solid var(--bd);padding:5px 13px;flex-shrink:0;font-size:11px;color:var(--tx3)" id="dtInf"></div>
   <div class="ctabs"><div class="ctab on" data-c="all" onclick="setCat('all')">全部</div><div class="ctab" data-c="owned" onclick="setCat('owned')">✅ 已持有</div><div class="ctab" data-c="unowned" onclick="setCat('unowned')">❌ 未持有</div><div class="ctab" data-c="extra" onclick="setCat('extra')">⭐ 多餘</div></div>
   <div style="padding:6px 13px;background:var(--sf);border-bottom:1px solid var(--bd);flex-shrink:0">
-    <input id="itSearch" class="fi" placeholder="🔍 搜尋物品…" oninput="rItems()" style="background:var(--sf2);border-radius:9px;padding:8px 11px;width:100%;font-size:14px">
+    <div style="position:relative">
+          <input id="itSearch" class="fi" placeholder="🔍 搜尋物品…" oninput="onItSearch()" style="background:var(--sf2);border-radius:9px;padding:8px 32px 8px 11px;width:100%;font-size:14px">
+          <button id="itSearchClear" onclick="clearItSearch()" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--tx3);font-size:15px;cursor:pointer;padding:0;line-height:1;touch-action:manipulation">✕</button>
+        </div>
   </div>
   <div class="ps" id="itL"></div>
 </div>
@@ -1171,12 +1177,35 @@ function rItems(){
     var unowned=MB.filter(function(m){return(it.owned||[]).indexOf(m.name)<0;}).map(function(m){return m.name;}).join('、');
     out+='<div class="ir" onclick="openItEdit(\''+it.id+'\')"><div style="flex:1;min-width:0">'
       +'<div class="inn">'+sf(it.name)+(stars?' <span style="color:var(--amber);font-size:10px">'+stars+'</span>':'')+'</div>'
-      +'<div class="isb">'+(alb?sf(alb.name)+' · ':'')+'已：'+(owned||'無')+'</div>'
+      +'<div class="isb">'+(alb?sf(alb.name):'')+'</div>'
       +(unowned?'<div class="isb" style="color:var(--red-tx)">未：'+sf(unowned)+'</div>':'')
       +(extra?'<div class="isb" style="color:var(--amber-tx)">多：'+sf(extra)+'</div>':'')
       +'</div><span class="ibg">'+((it.owned||[]).length)+'/'+MB.length+'</span></div>';
   }
   el.innerHTML=out;
+}
+// ── 搜尋欄清除輔助 ──
+function onItSearch(){
+  var inp=$('itSearch'),btn=$('itSearchClear');
+  if(btn) btn.style.display=inp&&inp.value?'':'none';
+  rItems();
+}
+function clearItSearch(){
+  var inp=$('itSearch'),btn=$('itSearchClear');
+  if(inp) inp.value='';
+  if(btn) btn.style.display='none';
+  rItems();
+}
+function onEvSearch(){
+  var inp=$('evSearch'),btn=$('evSearchClear');
+  if(btn) btn.style.display=inp&&inp.value?'':'none';
+  rEv();
+}
+function clearEvSearch(){
+  var inp=$('evSearch'),btn=$('evSearchClear');
+  if(inp) inp.value='';
+  if(btn) btn.style.display='none';
+  rEv();
 }
 // ══ 批次持有狀態編輯 ══
 var bkChanges = {}; // {itemId: {owned:[...], extra:[...]}}
@@ -1283,25 +1312,23 @@ function renderBkEdit(){
           dot.className = 'bk-dot '+(isThisActive?states[k]==='extra'?'extra':'owned':'');
           if(isThisActive) dot.textContent = icons[k];
           // extra 只有在 owned 狀態才可選
-          if(states[k]==='extra'){
-            dot.className += (state!=='owned'&&state!=='extra')?' disabled':'';
-          }
+          // 多餘格永遠可點，移除初始 disabled 限制
           (function(st, dotEl, tdEl, itRef){
             function handleTap(e){
               e.preventDefault();
               var cur = tr.getAttribute('data-state')||state;
-              // disabled 狀態直接返回
-              if(st==='extra'){
-                if(cur!=='owned'&&cur!=='extra') return;
-              }else if(st===cur){
-                return;
-              }
+              // 點當前狀態（已持有點已持有）無效
+              if(st===cur&&st!=='extra') return;
               var newState;
               if(st==='extra'){
+                // 點多餘：任何狀態都可點
+                // unowned→extra, owned→extra, extra→owned(取消多餘)
                 newState = cur==='extra'?'owned':'extra';
+              }else if(st==='unowned'){
+                newState='unowned';
               }else{
-                newState = st;
-                if(cur==='extra'&&st==='unowned') newState='unowned';
+                // st==='owned'
+                newState='owned';
               }
               tr.setAttribute('data-state', newState);
               var dots = tr.querySelectorAll('.bk-dot');
@@ -1314,7 +1341,7 @@ function renderBkEdit(){
               if(newState==='owned'||newState==='extra') dots[1].textContent='✓';
               dots[2].className='bk-dot'+(newState==='extra'?' extra':'');
               if(newState==='extra') dots[2].textContent='★';
-              dots[2].className+=(newState==='unowned')?' disabled':'';
+              // 多餘格永遠可點（未持有時點多餘直接升為 extra）
               var owned = (itRef.owned||[]).slice();
               var extra = (itRef.extra||[]).slice();
               var mi = owned.indexOf(bkMember);
@@ -1358,25 +1385,44 @@ function renderBkEdit(){
 function saveBkEdit(){
   var ids = Object.keys(bkChanges);
   if(!ids.length){toast('沒有任何變更');return;}
-  var total = ids.length;
-  var done  = 0;
-  var errs  = [];
-  isSaving  = true;
+  isSaving=true;
   ld(true);
-  $('bkSavBtn').disabled = true;
-
+  $('bkSavBtn').disabled=true;
+  // 先拉最新資料，再以成員為基準做 merge，避免不同人同時改不同成員持有時互相覆蓋
+  apiXHR('getAll',null,function(errG,fresh){
+    if(errG){
+      // 拉取失敗，降級使用本地資料（可能有衝突）
+      _doBkSave(null);
+      return;
+    }
+    _doBkSave(fresh);
+  });
+}
+function _doBkSave(fresh){
+  var ids=Object.keys(bkChanges);
+  var total=ids.length;
+  var done=0;
+  var errs=[];
+  // 建立 fresh items 的 id→item map
+  var freshMap={};
+  if(fresh&&fresh.items){
+    for(var fi=0;fi<fresh.items.length;fi++){
+      freshMap[fresh.items[fi].id]=fresh.items[fi];
+    }
+  }
   function next(){
     if(done>=total){
       ld(false);
       $('bkSavBtn').disabled=false;
       if(errs.length){
+        isSaving=false;
         toast('⚠ 部分儲存失敗（'+errs.length+'/'+total+'）：'+errs[0]);
       }else{
-        // 更新 local IT
+        // 更新 local IT（只改 bkMember 的持有欄位）
         for(var i=0;i<ids.length;i++){
           var ch=bkChanges[ids[i]];
           var it=IT.filter(function(x){return x.id===ch.id;})[0];
-          if(it){it.owned=ch.owned;it.extra=ch.extra;}
+          if(it){it.owned=ch.owned;it.extra=ch.extra;it.updatedAt=ch._newUpdAt||it.updatedAt;}
         }
         saveCache();
         releaseSaving();
@@ -1389,21 +1435,41 @@ function saveBkEdit(){
     }
     var id=ids[done];
     var ch=bkChanges[id];
-    var pay={id:ch.id,eventId:ch.eventId,name:ch.name,albumId:ch.albumId,stars:ch.stars,
-             owned:ch.owned,extra:ch.extra};
-    // 取得現有 updatedAt（樂觀鎖）
-    var it=IT.filter(function(x){return x.id===id;})[0];
-    if(it&&it.updatedAt) pay.updatedAt=it.updatedAt;
+    // 取雲端最新資料做 merge
+    var freshIt=freshMap[id];
+    var baseOwned,baseExtra,baseUpdAt;
+    if(freshIt){
+      // 有雲端最新資料：以雲端為底，只改 bkMember 的部分
+      baseOwned=parseArr(freshIt.owned);
+      baseExtra=parseArr(freshIt.extra);
+      baseUpdAt=freshIt.updatedAt||'';
+    }else{
+      // 無雲端資料：用本地
+      var localIt=IT.filter(function(x){return x.id===id;})[0];
+      baseOwned=(localIt?localIt.owned||[]:[]).slice();
+      baseExtra=(localIt?localIt.extra||[]:[]).slice();
+      baseUpdAt=localIt?localIt.updatedAt||'':'';
+    }
+    // 對 bkMember 做 merge：
+    // ch.owned 包含 bkMember 代表該成員已持有，否則未持有
+    var memberOwned=(ch.owned||[]).indexOf(bkMember)>=0;
+    var memberExtra=(ch.extra||[]).indexOf(bkMember)>=0;
+    // 從 base 移除 bkMember，再依選擇加回
+    var mi=baseOwned.indexOf(bkMember);
+    if(mi>=0) baseOwned.splice(mi,1);
+    var xi=baseExtra.indexOf(bkMember);
+    if(xi>=0) baseExtra.splice(xi,1);
+    if(memberOwned) baseOwned.push(bkMember);
+    if(memberExtra) baseExtra.push(bkMember);
+    var pay={id:ch.id,eventId:ch.eventId,name:ch.name,albumId:ch.albumId,
+             stars:ch.stars,owned:baseOwned,extra:baseExtra};
+    // 使用雲端的 updatedAt（不帶 updatedAt 代表不做樂觀鎖，允許合併）
+    // 批次編輯以成員為衝突基準，不使用物品層級的樂觀鎖
     apiXHR('saveItem',pay,function(err,r){
       if(err){
-        if(err.message&&err.message.indexOf('CONFLICT:')===0){
-          errs.push(ch.name+' 有衝突，請重新同步');
-        }else{
-          errs.push(ch.name+':'+err.message);
-        }
-      }else if(r&&r.updatedAt){
-        var itUpd=IT.filter(function(x){return x.id===ch.id;})[0];
-        if(itUpd) itUpd.updatedAt=r.updatedAt;
+        errs.push(ch.name+':'+err.message);
+      }else{
+        if(r&&r.updatedAt) ch._newUpdAt=r.updatedAt;
       }
       done++;
       next();
