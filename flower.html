@@ -146,6 +146,20 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
 .tr{background:var(--rose-bg);color:var(--rose-tx)}
 .tg{background:var(--green-bg);color:var(--green-tx)}
 /* slide panel */
+.bk-table{width:100%;border-collapse:collapse;font-size:13px}
+.bk-th{padding:6px 8px;font-size:11px;font-weight:700;color:var(--tx3);background:var(--sf2);text-align:center;border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:1}
+.bk-th:first-child{text-align:left;padding-left:13px}
+.bk-alb{padding:7px 13px 3px;font-size:11px;font-weight:700;color:var(--tx3);background:var(--sf2);letter-spacing:.4px}
+.bk-tr{border-bottom:1px solid var(--bd)}
+.bk-tr:last-child{border-bottom:none}
+.bk-td-nm{padding:9px 8px 9px 13px;color:var(--tx);font-size:13px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bk-td-nm small{display:block;font-size:10px;color:var(--amber)}
+.bk-cell{text-align:center;padding:6px 4px;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.bk-dot{width:22px;height:22px;border-radius:50%;border:2px solid var(--bd);margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:12px;transition:background .15s,border-color .15s}
+.bk-dot.unowned{border-color:var(--bd);background:var(--sf2)}
+.bk-dot.owned{border-color:var(--green,#4caf50);background:#e8f5e9;color:#2e7d32}
+.bk-dot.extra{border-color:var(--amber);background:#fff8e1;color:#f57f17}
+.bk-dot.disabled{opacity:.3;cursor:not-allowed}
 .itpk-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--sf);border:1px solid var(--bd);cursor:pointer;touch-action:manipulation}
 .itpk-row:active{background:var(--accent-bg)}
 .pg-panel{
@@ -512,13 +526,31 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
 <!-- Event Detail -->
 <div class="pg-panel pg-sub" id="pp-evDt">
   <div class="pg-sub-bar"></div>
-  <div class="dn"><button class="dbk" onclick="cp('pp-evDt')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button><h2 id="dtTit">物品列表</h2><button class="dsav" onclick="doSync()" style="font-size:12px;padding:6px 10px;display:flex;align-items:center;gap:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="23,4 23,10 17,10"/><polyline points="1,20 1,14 7,14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>同步</button><button class="hb" style="background:var(--accent-dk);padding:5px 10px" onclick="openItEdit(null)">＋</button></div>
+  <div class="dn"><button class="dbk" onclick="cp('pp-evDt')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button><h2 id="dtTit">物品列表</h2><button class="dsav" onclick="doSync()" style="font-size:12px;padding:6px 10px;display:flex;align-items:center;gap:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="23,4 23,10 17,10"/><polyline points="1,20 1,14 7,14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>同步</button><button class="dsav" onclick="openBkEdit()" style="font-size:12px;padding:6px 9px;display:flex;align-items:center;gap:3px" title="批次編輯持有狀態"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>批次</button><button class="hb" style="background:var(--accent-dk);padding:5px 10px" onclick="openItEdit(null)">＋</button></div>
   <div style="background:var(--sf);border-bottom:1px solid var(--bd);padding:5px 13px;flex-shrink:0;font-size:11px;color:var(--tx3)" id="dtInf"></div>
   <div class="ctabs"><div class="ctab on" data-c="all" onclick="setCat('all')">全部</div><div class="ctab" data-c="owned" onclick="setCat('owned')">✅ 已持有</div><div class="ctab" data-c="unowned" onclick="setCat('unowned')">❌ 未持有</div><div class="ctab" data-c="extra" onclick="setCat('extra')">⭐ 多餘</div></div>
   <div style="padding:6px 13px;background:var(--sf);border-bottom:1px solid var(--bd);flex-shrink:0">
     <input id="itSearch" class="fi" placeholder="🔍 搜尋物品…" oninput="rItems()" style="background:var(--sf2);border-radius:9px;padding:8px 11px;width:100%;font-size:14px">
   </div>
   <div class="ps" id="itL"></div>
+</div>
+
+<!-- Batch Edit -->
+<div class="pg-panel pg-sub" id="pp-bkEd">
+  <div class="pg-sub-bar"></div>
+  <div class="dn">
+    <button class="dbk" onclick="cp('pp-bkEd')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button>
+    <h2>批次持有編輯</h2>
+    <button class="dsav" onclick="saveBkEdit()" id="bkSavBtn" style="font-size:12px;padding:6px 10px">儲存</button>
+  </div>
+  <div style="padding:8px 13px;background:var(--sf);border-bottom:1px solid var(--bd);flex-shrink:0">
+    <div style="font-size:11px;color:var(--tx3);margin-bottom:6px">選擇成員，檢視並編輯各物品的持有狀態</div>
+    <select id="bk-mb" class="fse" onchange="renderBkEdit()" style="width:100%"><option value="">-- 請選擇成員 --</option></select>
+  </div>
+  <div class="ps" id="bkL" style="padding:0"></div>
+  <div id="bkSaveBar" style="display:none;padding:10px 13px;border-top:1px solid var(--bd);background:var(--sf);flex-shrink:0">
+    <button onclick="saveBkEdit()" style="width:100%;padding:12px;border-radius:11px;background:var(--accent);color:#fff;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;touch-action:manipulation">儲存所有變更</button>
+  </div>
 </div>
 
 <!-- Item Edit -->
@@ -1112,6 +1144,233 @@ function rItems(){
   }
   el.innerHTML=out;
 }
+// ══ 批次持有狀態編輯 ══
+var bkChanges = {}; // {itemId: {owned:[...], extra:[...]}}
+var bkMember  = ''; // 目前選取的成員名稱
+
+function openBkEdit(){
+  bkChanges = {};
+  bkMember  = '';
+  var sel = $('bk-mb');
+  if(!sel) return;
+  // 填充成員清單
+  var opts = '<option value="">-- 請選擇成員 --</option>';
+  for(var i=0;i<MB.length;i++) opts += '<option value="'+sf(MB[i].name)+'">'+sf(MB[i].name)+'</option>';
+  sel.innerHTML = opts;
+  sel.value = '';
+  $('bkL').innerHTML = '<div style="text-align:center;padding:32px;color:var(--tx3);font-size:13px">請先選擇成員</div>';
+  $('bkSaveBar').style.display='none';
+  op('pp-bkEd');
+  $('pp-bkEd').querySelector('.ps').scrollTop = 0;
+}
+
+function renderBkEdit(){
+  bkMember = $('bk-mb').value;
+  bkChanges = {};
+  var el = $('bkL');
+  if(!bkMember){
+    el.innerHTML='<div style="text-align:center;padding:32px;color:var(--tx3);font-size:13px">請先選擇成員</div>';
+    $('bkSaveBar').style.display='none';
+    return;
+  }
+  // 取得目前活動的所有物品
+  var its = IT.filter(function(x){return x.eventId===dtEvId;});
+  if(!its.length){
+    el.innerHTML='<div style="text-align:center;padding:32px;color:var(--tx3);font-size:13px">此活動尚無物品</div>';
+    $('bkSaveBar').style.display='none';
+    return;
+  }
+  // 依相冊分組
+  var byAlb = {};
+  var noAlb = [];
+  for(var i=0;i<its.length;i++){
+    var it = its[i];
+    var albId = it.albumId||'';
+    if(!albId){ noAlb.push(it); continue; }
+    if(!byAlb[albId]) byAlb[albId] = [];
+    byAlb[albId].push(it);
+  }
+  var albIds = Object.keys(byAlb);
+  // 排序相冊依 AL 順序
+  albIds.sort(function(a,b){
+    var ai=AL.findIndex(function(x){return x.id===a;})||0;
+    var bi=AL.findIndex(function(x){return x.id===b;})||0;
+    return ai-bi;
+  });
+
+  var html = '<table class="bk-table">'
+    +'<thead><tr>'
+    +'<th class="bk-th" style="text-align:left;padding-left:13px">物品</th>'
+    +'<th class="bk-th">未持有</th>'
+    +'<th class="bk-th">已持有</th>'
+    +'<th class="bk-th">多餘</th>'
+    +'</tr></thead><tbody id="bkTbody"></tbody></table>';
+  el.innerHTML = html;
+
+  var tbody = document.getElementById('bkTbody');
+
+  function addRows(items, albName){
+    if(!items.length) return;
+    if(albName){
+      var hdr = document.createElement('tr');
+      hdr.innerHTML = '<td colspan="4" class="bk-alb">'+sf(albName)+'</td>';
+      tbody.appendChild(hdr);
+    }
+    for(var j=0;j<items.length;j++){
+      (function(it){
+        var isOwned = (it.owned||[]).indexOf(bkMember)>=0;
+        var isExtra = (it.extra||[]).indexOf(bkMember)>=0;
+        var starsN  = Number(it.stars)||0;
+        var starsStr= starsN?new Array(starsN+1).join('★'):'';
+
+        var state = isExtra?'extra': isOwned?'owned':'unowned';
+
+        var tr = document.createElement('tr');
+        tr.className = 'bk-tr';
+        tr.setAttribute('data-id', it.id);
+
+        // 名稱欄
+        var tdNm = document.createElement('td');
+        tdNm.className='bk-td-nm';
+        tdNm.innerHTML=sf(it.name)+(starsStr?'<small>'+starsStr+'</small>':'');
+        tr.appendChild(tdNm);
+
+        // 三個狀態欄
+        var states = ['unowned','owned','extra'];
+        var icons  = ['','✓','★'];
+        for(var k=0;k<3;k++){
+          var td = document.createElement('td');
+          td.className = 'bk-cell';
+          var dot = document.createElement('div');
+          dot.className = 'bk-dot '+(state===states[k]?states[k]:'unowned');
+          if(state===states[k]) dot.textContent = icons[k];
+          // extra 只有在 owned 狀態才可選
+          if(states[k]==='extra'){
+            dot.className += (state!=='owned'&&state!=='extra')?' disabled':'';
+          }
+          (function(st, dotEl, tdEl, itRef){
+            td.addEventListener('click', function(){
+              var cur = tr.getAttribute('data-state')||state;
+              var newState;
+              if(st==='extra'){
+                // 只有 owned 狀態才可切換 extra
+                if(cur!=='owned'&&cur!=='extra') return;
+                newState = cur==='extra'?'owned':'extra';
+              }else if(st===cur){
+                return; // 點當前狀態無效
+              }else{
+                newState = st;
+                // 若從 extra 切換走，先回 owned
+                if(cur==='extra'&&st==='unowned') newState='unowned';
+              }
+              tr.setAttribute('data-state', newState);
+              // 更新所有 dot 顯示
+              var dots = tr.querySelectorAll('.bk-dot');
+              for(var d=0;d<dots.length;d++){
+                dots[d].className='bk-dot';
+                dots[d].textContent='';
+              }
+              dots[0].className='bk-dot'+(newState==='unowned'?' unowned':'');
+              dots[1].className='bk-dot'+(newState==='owned'||newState==='extra'?' owned':'');
+              if(newState==='owned'||newState==='extra') dots[1].textContent='✓';
+              dots[2].className='bk-dot'+(newState==='extra'?' extra':'');
+              if(newState==='extra') dots[2].textContent='★';
+              // extra dot 可用性
+              dots[2].className+=(newState==='unowned')?' disabled':'';
+              // 記錄變更
+              var owned = (itRef.owned||[]).slice();
+              var extra = (itRef.extra||[]).slice();
+              var mi = owned.indexOf(bkMember);
+              var xi = extra.indexOf(bkMember);
+              if(newState==='unowned'){
+                if(mi>=0) owned.splice(mi,1);
+                if(xi>=0) extra.splice(xi,1);
+              }else if(newState==='owned'){
+                if(mi<0) owned.push(bkMember);
+                if(xi>=0) extra.splice(xi,1);
+              }else{
+                if(mi<0) owned.push(bkMember);
+                if(xi<0) extra.push(bkMember);
+              }
+              bkChanges[itRef.id]={id:itRef.id,eventId:itRef.eventId,name:itRef.name,albumId:itRef.albumId,stars:itRef.stars,owned:owned,extra:extra};
+            });
+          })(states[k], dot, td, it);
+          td.appendChild(dot);
+          tr.appendChild(td);
+        }
+        tr.setAttribute('data-state', state);
+        tbody.appendChild(tr);
+      })(items[j]);
+    }
+  }
+
+  for(var ai=0;ai<albIds.length;ai++){
+    var alb=AL.filter(function(a){return a.id===albIds[ai];})[0];
+    addRows(byAlb[albIds[ai]], alb?alb.name:'');
+  }
+  if(noAlb.length) addRows(noAlb,'');
+
+  $('bkSaveBar').style.display='block';
+}
+
+function saveBkEdit(){
+  var ids = Object.keys(bkChanges);
+  if(!ids.length){toast('沒有任何變更');return;}
+  var total = ids.length;
+  var done  = 0;
+  var errs  = [];
+  isSaving  = true;
+  ld(true);
+  $('bkSavBtn').disabled = true;
+
+  function next(){
+    if(done>=total){
+      ld(false);
+      $('bkSavBtn').disabled=false;
+      if(errs.length){
+        toast('⚠ 部分儲存失敗（'+errs.length+'/'+total+'）：'+errs[0]);
+      }else{
+        // 更新 local IT
+        for(var i=0;i<ids.length;i++){
+          var ch=bkChanges[ids[i]];
+          var it=IT.filter(function(x){return x.id===ch.id;})[0];
+          if(it){it.owned=ch.owned;it.extra=ch.extra;}
+        }
+        saveCache();
+        releaseSaving();
+        bkChanges={};
+        cp('pp-bkEd');
+        rItems();rEv();
+        toast('✓ 已儲存 '+total+' 筆物品');
+      }
+      return;
+    }
+    var id=ids[done];
+    var ch=bkChanges[id];
+    var pay={id:ch.id,eventId:ch.eventId,name:ch.name,albumId:ch.albumId,stars:ch.stars,
+             owned:ch.owned,extra:ch.extra};
+    // 取得現有 updatedAt（樂觀鎖）
+    var it=IT.filter(function(x){return x.id===id;})[0];
+    if(it&&it.updatedAt) pay.updatedAt=it.updatedAt;
+    apiXHR('saveItem',pay,function(err,r){
+      if(err){
+        if(err.message&&err.message.indexOf('CONFLICT:')===0){
+          errs.push(ch.name+' 有衝突，請重新同步');
+        }else{
+          errs.push(ch.name+':'+err.message);
+        }
+      }else if(r&&r.updatedAt){
+        var itUpd=IT.filter(function(x){return x.id===ch.id;})[0];
+        if(itUpd) itUpd.updatedAt=r.updatedAt;
+      }
+      done++;
+      next();
+    });
+  }
+  next();
+}
+
+// ══ end 批次持有狀態編輯 ══
 function openItEdit(id){
   eItId=id;
   var it=id?IT.filter(function(x){return x.id===id;})[0]:null;
@@ -1975,7 +2234,7 @@ function refreshSels(){
   var mbOpts='<option value="">-- 選擇 --</option>';
   for(var i=0;i<MB.length;i++) mbOpts+='<option value="'+MB[i].name+'">'+sf(MB[i].name)+'</option>';
   ['gr-ev','tr-ev'].forEach(function(id){var el=$(id);if(!el)return;var cv=el.value;el.innerHTML=evOpts;el.value=cv;});
-  ['gr-mb','tr-ma','tr-mb'].forEach(function(id){var el=$(id);if(!el)return;var cv=el.value;el.innerHTML=mbOpts;el.value=cv;});
+  ['gr-mb','tr-ma','tr-mb','bk-mb'].forEach(function(id){var el=$(id);if(!el)return;var cv=el.value;el.innerHTML=mbOpts;el.value=cv;if($('bk-mb')&&id==='bk-mb'&&cv) renderBkEdit();});
 }
 function exportJSON(){
   var a=document.createElement('a');
