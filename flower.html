@@ -511,7 +511,7 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
 <!-- Event Detail -->
 <div class="pg-panel pg-sub" id="pp-evDt">
   <div class="pg-sub-bar"></div>
-  <div class="dn"><button class="dbk" onclick="cp('pp-evDt')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button><h2 id="dtTit">物品列表</h2><button class="hb" style="background:var(--accent-dk);padding:5px 10px" onclick="openItEdit(null)">＋</button></div>
+  <div class="dn"><button class="dbk" onclick="cp('pp-evDt')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button><h2 id="dtTit">物品列表</h2><button class="hb" onclick="doSync()" style="padding:5px 9px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="23,4 23,10 17,10"/><polyline points="1,20 1,14 7,14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg></button><button class="hb" style="background:var(--accent-dk);padding:5px 10px" onclick="openItEdit(null)">＋</button></div>
   <div style="background:var(--sf);border-bottom:1px solid var(--bd);padding:5px 13px;flex-shrink:0;font-size:11px;color:var(--tx3)" id="dtInf"></div>
   <div class="ctabs"><div class="ctab on" data-c="all" onclick="setCat('all')">全部</div><div class="ctab" data-c="owned" onclick="setCat('owned')">✅ 已持有</div><div class="ctab" data-c="unowned" onclick="setCat('unowned')">❌ 未持有</div><div class="ctab" data-c="extra" onclick="setCat('extra')">⭐ 多餘</div></div>
   <div style="padding:6px 13px;background:var(--sf);border-bottom:1px solid var(--bd);flex-shrink:0">
@@ -629,7 +629,7 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
 <!-- Event Maint List -->
 <div class="pg-panel pg-sub" id="pp-maEvL">
   <div class="pg-sub-bar"></div>
-  <div class="dn"><button class="dbk" onclick="cp('pp-maEvL')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button><h2>活動維護</h2></div>
+  <div class="dn"><button class="dbk" onclick="cp('pp-maEvL')"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg>返回</button><h2>活動維護</h2><button class="hb" onclick="doSync()" style="padding:5px 9px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="23,4 23,10 17,10"/><polyline points="1,20 1,14 7,14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg></button></div>
   <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:13px" id="maEvL"></div>
 </div>
 
@@ -1118,6 +1118,7 @@ function openItEdit(id){
   $('it-nm').value=it?it.name:'';
   $('itDelB').style.display=it?'block':'none';
   eItUpdAt=it?it.updatedAt||'':'';
+  showUpdAt('uat-itEd',eItUpdAt);
   // 相冊：只顯示屬於此活動的相冊（AL.eventId === 活動id）
   var evId=it?it.eventId:dtEvId;
   var evAlbs=AL.filter(function(a){return a.eventId===evId;});
@@ -1133,6 +1134,9 @@ function openItEdit(id){
   for(var i=0;i<extra.length;i++) exS[extra[i]]=true;
   rMC();
   op('pp-itEd');
+  // 每次開啟都回到頂端（物品資訊區塊）
+  var dsc=$('pp-itEd').querySelector('.dsc');
+  if(dsc) dsc.scrollTop=0;
 }
 function rMC(){
   var uH='',eH='';
