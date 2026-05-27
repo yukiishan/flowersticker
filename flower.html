@@ -154,8 +154,8 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
 .bk-tr:last-child{border-bottom:none}
 .bk-td-nm{padding:9px 8px 9px 13px;color:var(--tx);font-size:13px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bk-td-nm small{display:block;font-size:10px;color:var(--amber)}
-.bk-cell{text-align:center;padding:6px 4px;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none}
-.bk-dot{width:22px;height:22px;border-radius:50%;border:2px solid var(--bd);margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:12px;transition:background .15s,border-color .15s}
+.bk-cell{text-align:center;padding:8px 4px;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+.bk-dot{width:28px;height:28px;border-radius:50%;border:2px solid var(--bd);margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:13px;transition:background .15s,border-color .15s;pointer-events:none}
 .bk-dot.unowned{border-color:var(--bd);background:var(--sf2)}
 .bk-dot.owned{border-color:var(--green,#4caf50);background:#e8f5e9;color:#2e7d32}
 .bk-dot.extra{border-color:var(--amber);background:#fff8e1;color:#f57f17}
@@ -1249,22 +1249,23 @@ function renderBkEdit(){
             dot.className += (state!=='owned'&&state!=='extra')?' disabled':'';
           }
           (function(st, dotEl, tdEl, itRef){
-            td.addEventListener('click', function(){
+            function handleTap(e){
+              e.preventDefault();
               var cur = tr.getAttribute('data-state')||state;
+              // disabled 狀態直接返回
+              if(st==='extra'){
+                if(cur!=='owned'&&cur!=='extra') return;
+              }else if(st===cur){
+                return;
+              }
               var newState;
               if(st==='extra'){
-                // 只有 owned 狀態才可切換 extra
-                if(cur!=='owned'&&cur!=='extra') return;
                 newState = cur==='extra'?'owned':'extra';
-              }else if(st===cur){
-                return; // 點當前狀態無效
               }else{
                 newState = st;
-                // 若從 extra 切換走，先回 owned
                 if(cur==='extra'&&st==='unowned') newState='unowned';
               }
               tr.setAttribute('data-state', newState);
-              // 更新所有 dot 顯示
               var dots = tr.querySelectorAll('.bk-dot');
               for(var d=0;d<dots.length;d++){
                 dots[d].className='bk-dot';
@@ -1275,9 +1276,7 @@ function renderBkEdit(){
               if(newState==='owned'||newState==='extra') dots[1].textContent='✓';
               dots[2].className='bk-dot'+(newState==='extra'?' extra':'');
               if(newState==='extra') dots[2].textContent='★';
-              // extra dot 可用性
               dots[2].className+=(newState==='unowned')?' disabled':'';
-              // 記錄變更
               var owned = (itRef.owned||[]).slice();
               var extra = (itRef.extra||[]).slice();
               var mi = owned.indexOf(bkMember);
@@ -1293,6 +1292,11 @@ function renderBkEdit(){
                 if(xi<0) extra.push(bkMember);
               }
               bkChanges[itRef.id]={id:itRef.id,eventId:itRef.eventId,name:itRef.name,albumId:itRef.albumId,stars:itRef.stars,owned:owned,extra:extra};
+            }
+            // 同時綁 touchstart（Android 快速響應）和 click（桌機/iOS）
+            td.addEventListener('touchstart', handleTap, {passive:false});
+            td.addEventListener('click', function(){
+              // touchstart 已處理，click 不重複執行
             });
           })(states[k], dot, td, it);
           td.appendChild(dot);
