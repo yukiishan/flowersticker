@@ -12,6 +12,7 @@
 <title>巡夢貼紙-泛彼柏舟</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+select,input{-webkit-tap-highlight-color:rgba(0,0,0,0) !important}
 :root{
   --bg:#F5EFEE;--sf:#FBF7F6;--sf2:#EDE4E3;--bd:#DDD0CF;
   --tx:#2E2321;--tx2:#6B5E5D;--tx3:#A89190;
@@ -992,7 +993,16 @@ function startApp(){
 function renderAll(){rEv();rGr();renderCal();renderTrList();updSC();refreshSels();}
 
 // ── panel helpers ──
-function op(id){$(id).classList.add('open');}
+function op(id){
+  var el=$(id);
+  if(!el) return;
+  el.classList.add('open');
+  // 強制重繪層級，防止 Android/iOS 硬體加速導致觸控焦點錯位
+  el.style.transform='translateZ(0)';
+  // 重置內部捲動，防止點擊穿透殘留位置
+  var scrollable=el.querySelector('.ps,.dsc');
+  if(scrollable) scrollable.scrollTop=0;
+}
 function cp(id){$(id).classList.remove('open');}
 function cpAll(){
   var ps=document.querySelectorAll('.pg-panel');
@@ -2239,8 +2249,13 @@ function refreshSels(){
   for(var i=0;i<E.length;i++) evOpts+='<option value="'+E[i].id+'">'+sf(E[i].name)+'</option>';
   var mbOpts='<option value="">-- 選擇 --</option>';
   for(var i=0;i<MB.length;i++) mbOpts+='<option value="'+MB[i].name+'">'+sf(MB[i].name)+'</option>';
-  ['gr-ev','tr-ev'].forEach(function(id){var el=$(id);if(!el)return;var cv=el.value;el.innerHTML=evOpts;el.value=cv;});
-  ['gr-mb','tr-ma','tr-mb','bk-mb'].forEach(function(id){var el=$(id);if(!el)return;var cv=el.value;el.innerHTML=mbOpts;el.value=cv;});
+  function restoreVal(ids,opts){
+    var saved=[];
+    ids.forEach(function(id){var el=$(id);if(!el)return;saved.push({el:el,v:el.value});el.innerHTML=opts;});
+    setTimeout(function(){saved.forEach(function(o){o.el.value=o.v;});},40);
+  }
+  restoreVal(['gr-ev','tr-ev'],evOpts);
+  restoreVal(['gr-mb','tr-ma','tr-mb','bk-mb'],mbOpts);
 }
 function exportJSON(){
   var a=document.createElement('a');
