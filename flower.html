@@ -1105,25 +1105,32 @@ function delEv(){
   ld(true);
   apiXHR('deleteEvent',{id:eEvId,updatedAt:eEvUpdAt},function(err){
     ld(false);
+    isSaving=false;
     if(err){
-      isSaving=false;
-      if(err.message&&err.message.indexOf('not found')>=0){
-        E=E.filter(function(e){return e.id!==eEvId;});
-        IT=IT.filter(function(x){return x.eventId!==eEvId;});
-        AL=AL.filter(function(a){return a.eventId!==eEvId;});
-        GR=GR.filter(function(g){return g.eventId!==eEvId;});
-        TR=TR.filter(function(t){return t.eventId!==eEvId;});
-        saveCache();cp('pp-evEd');renderAll();toast('✓ 已從本地移除');
-      }else{toast('❌ '+err.message);}
+      var msg=err.message||'';
+      var isNotFound=msg.toLowerCase().indexOf('not found')>=0||msg.toLowerCase().indexOf('event not found')>=0;
+      if(isNotFound){
+        _forceDelEv();
+        return;
+      }
+      // 其他錯誤：詢問是否強制本地刪除
+      if(confirm('❌ '+msg+'\n\n若試算表已無此活動，是否強制從本地移除？')){
+        _forceDelEv();
+      }
       return;
     }
-    E=E.filter(function(e){return e.id!==eEvId;});
-    IT=IT.filter(function(x){return x.eventId!==eEvId;});
-    AL=AL.filter(function(a){return a.eventId!==eEvId;});
-    GR=GR.filter(function(g){return g.eventId!==eEvId;});
-    TR=TR.filter(function(t){return t.eventId!==eEvId;});
-    saveCache();releaseSaving();cp('pp-evEd');renderAll();toast('✓ 已刪除');
+    _forceDelEv();
+    releaseSaving();
+    toast('✓ 已刪除');
   });
+}
+function _forceDelEv(){
+  E=E.filter(function(e){return e.id!==eEvId;});
+  IT=IT.filter(function(x){return x.eventId!==eEvId;});
+  AL=AL.filter(function(a){return a.eventId!==eEvId;});
+  GR=GR.filter(function(g){return g.eventId!==eEvId;});
+  TR=TR.filter(function(t){return t.eventId!==eEvId;});
+  saveCache();cp('pp-evEd');renderAll();toast('✓ 已從本地移除');
 }
 function openEvDt(id){
   dtEvId=id;curCat='all';
@@ -2261,23 +2268,28 @@ function delMaEv(){
   if(!confirm('確定刪除此活動？底下物品、相冊、畢業紀錄、交換紀錄也會一起刪除。')) return;isSaving=true;ld(true);
   apiXHR('deleteEvent',{id:eMaEvId,updatedAt:eMaEvUpdAt},function(err){
     ld(false);
+    isSaving=false;
     if(err){
-      isSaving=false;
-      if(err.message&&err.message.indexOf('not found')>=0){
-        E=E.filter(function(e){return e.id!==eMaEvId;});
-        IT=IT.filter(function(x){return x.eventId!==eMaEvId;});
-        AL=AL.filter(function(a){return a.eventId!==eMaEvId;});
-        saveCache();cp('pp-maEvEd');rMaEvL();rEv();updSC();toast('✓ 已從本地移除');
-      }else{toast('❌ '+err.message);}
+      var msg=err.message||'';
+      var isNotFound=msg.toLowerCase().indexOf('not found')>=0;
+      if(isNotFound){
+        _forceDelMaEv();return;
+      }
+      if(confirm('❌ '+msg+'\n\n若試算表已無此活動，是否強制從本地移除？')){
+        _forceDelMaEv();
+      }
       return;
     }
-    E=E.filter(function(e){return e.id!==eMaEvId;});
-    IT=IT.filter(function(x){return x.eventId!==eMaEvId;});
-    AL=AL.filter(function(a){return a.eventId!==eMaEvId;});
-    GR=GR.filter(function(g){return g.eventId!==eMaEvId;});
-    TR=TR.filter(function(t){return t.eventId!==eMaEvId;});
-    saveCache();releaseSaving();cp('pp-maEvEd');rMaEvL();rEv();updSC();toast('✓ 已刪除');
+    _forceDelMaEv();releaseSaving();toast('✓ 已刪除');
   });
+}
+function _forceDelMaEv(){
+  E=E.filter(function(e){return e.id!==eMaEvId;});
+  IT=IT.filter(function(x){return x.eventId!==eMaEvId;});
+  AL=AL.filter(function(a){return a.eventId!==eMaEvId;});
+  GR=GR.filter(function(g){return g.eventId!==eMaEvId;});
+  TR=TR.filter(function(t){return t.eventId!==eMaEvId;});
+  saveCache();cp('pp-maEvEd');rMaEvL();rEv();updSC();toast('✓ 已從本地移除');
 }
 function refreshSels(){
   var evOpts='<option value="">-- 選擇活動 --</option>';
