@@ -715,6 +715,17 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
 //  巡夢貼紙-泛彼柏舟 管理系統
 //  ES5 + XMLHttpRequest - 相容 iOS Safari 11+, Android 5+
 // ══════════════════════════════════════════════════════════
+// closest() polyfill for Android 4.x / old WebView
+if(typeof Element!=='undefined'&&!Element.prototype.closest){
+  Element.prototype.closest=function(s){
+    var el=this;
+    do{
+      if(el.matches?el.matches(s):(el.msMatchesSelector?el.msMatchesSelector(s):false)) return el;
+      el=el.parentElement||el.parentNode;
+    }while(el!==null&&el.nodeType===1);
+    return null;
+  };
+}
 var API = 'https://script.google.com/macros/s/AKfycbzJSm_7k5RCI__5zehjIv7swtbxioee_4BGfjzD7QV7Ig0yQq_BBJrIc8QZpVrni5jO/exec';
 
 // ── helpers ──
@@ -1358,10 +1369,17 @@ function renderBkEdit(){
               }
               bkChanges[itRef.id]={id:itRef.id,eventId:itRef.eventId,name:itRef.name,albumId:itRef.albumId,stars:itRef.stars,owned:owned,extra:extra};
             }
-            // 同時綁 touchstart（Android 快速響應）和 click（桌機/iOS）
-            td.addEventListener('touchstart', handleTap, {passive:false});
-            td.addEventListener('click', function(){
-              // touchstart 已處理，click 不重複執行
+            // 桌機用 click；行動端用 touchstart 消除 300ms 延遲
+            // 用 flag 防止 touchstart 後 click 重複觸發
+            var _touched=false;
+            td.addEventListener('touchstart',function(e){
+              _touched=true;
+              handleTap(e);
+              setTimeout(function(){_touched=false;},600);
+            },{passive:false});
+            td.addEventListener('click',function(e){
+              if(_touched) return; // touchstart 已處理
+              handleTap(e);
             });
           })(states[k], dot, td, it);
           td.appendChild(dot);
