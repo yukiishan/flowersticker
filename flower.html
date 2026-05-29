@@ -1759,6 +1759,7 @@ function initCal(){
 // ══ PAGE 1.5: 狀態總覽 ══
 var stEvIdx=0;   // 目前選中活動 index（revE 中）
 var stAlbIdx=0;  // 目前選中相冊 index（含「全部」= index 0）
+var stAlbId='';  // 目前選中相冊的實際 id（''=全部）
 var stMbSel={};  // {memberName: true/false}
 
 function _stRevE(){ return E.slice().reverse(); }
@@ -1769,9 +1770,11 @@ function onStEv(){
   var sel=$('st-ev'); if(!sel) return;
   var revE=_stRevE();
   for(var i=0;i<revE.length;i++){if(revE[i].id===sel.value){stEvIdx=i;break;}}
-  var albs=_stEvAlbs(revE[stEvIdx]?revE[stEvIdx].id:'');
-  stAlbIdx=albs.length>0?1:0; // 切換活動時預設第一個相冊
-  _stSyncAlbSel(revE[stEvIdx]?revE[stEvIdx].id:'');
+  var evId=revE[stEvIdx]?revE[stEvIdx].id:'';
+  var albs=_stEvAlbs(evId);
+  stAlbIdx=albs.length>0?1:0;
+  stAlbId=albs.length>0?albs[0].id:'';
+  _stSyncAlbSel(evId);
   renderStatus();
 }
 // 活動箭頭
@@ -1788,17 +1791,17 @@ function onStAlb(){
   var sel=$('st-alb'); if(!sel) return;
   var evId=($('st-ev')||{}).value||'';
   var albs=_stEvAlbs(evId);
-  // index 0 = 全部，1~n = 各相冊
   var val=sel.value;
-  stAlbIdx=0;
-  for(var i=0;i<albs.length;i++){if(albs[i].id===val){stAlbIdx=i+1;break;}}
+  stAlbIdx=0;stAlbId='';
+  for(var i=0;i<albs.length;i++){if(albs[i].id===val){stAlbIdx=i+1;stAlbId=val;break;}}
   renderStatus();
 }
 // 相冊箭頭
 function stAlbShift(d){
-  var evId=($('st-ev')||{}).value||'';
+  var revE=_stRevE();
+  var evId=revE[stEvIdx]?revE[stEvIdx].id:'';
   var albs=_stEvAlbs(evId);
-  var total=albs.length+1; // 含「全部」
+  var total=albs.length+1;
   stAlbIdx=((stAlbIdx+d)+total)%total;
   _stSyncAlbSel(evId);
   renderStatus();
@@ -1810,11 +1813,15 @@ function _stSyncAlbSel(evId){
   var opts='<option value="">全部相冊</option>';
   for(var i=0;i<albs.length;i++) opts+='<option value="'+albs[i].id+'">'+sf(albs[i].name)+'</option>';
   sel.innerHTML=opts;
-  // iOS 需 setTimeout 確保 innerHTML 渲染後再回填 value
-  var targetVal=(stAlbIdx>0&&stAlbIdx<=albs.length)?albs[stAlbIdx-1].id:'';
-  if(!targetVal) stAlbIdx=0;
+  // stAlbId 直接追蹤選中的相冊 id，不依賴 DOM value
+  if(stAlbIdx>0&&stAlbIdx<=albs.length){
+    stAlbId=albs[stAlbIdx-1].id;
+  }else{
+    stAlbId='';stAlbIdx=0;
+  }
+  // iOS 回填 select 顯示（純 UI，不影響 stAlbId）
   setTimeout(function(){
-    var s=$('st-alb'); if(s) s.value=targetVal;
+    var s=$('st-alb'); if(s) s.value=stAlbId;
   },0);
 }
 // 初始化活動選單（只在 E 變動時重建，避免 iOS value 回填時序問題）
@@ -1834,9 +1841,11 @@ function _stInitEvSel(){
     stEvIdx=Math.min(stEvIdx,revE.length-1);
     var evId=revE[stEvIdx].id;
     var albs=_stEvAlbs(evId);
-    // 預設顯示第一個相冊（同步設定，讓 renderStatus 直接讀到正確的 stAlbIdx）
-    if(stAlbIdx===0&&albs.length>0) stAlbIdx=1;
-    // iOS 需 setTimeout 確保 innerHTML 已渲染再回填 select value（不影響 stAlbIdx）
+    // 預設顯示第一個相冊（同步設定 stAlbIdx 和 stAlbId）
+    if(stAlbIdx===0&&albs.length>0){stAlbIdx=1;stAlbId=albs[0].id;}
+    else if(stAlbIdx>0&&stAlbIdx<=albs.length){stAlbId=albs[stAlbIdx-1].id;}
+    else{stAlbId='';}
+    // iOS 需 setTimeout 確保 innerHTML 已渲染再回填 select value（不影響 stAlbIdx/stAlbId）
     (function(eid){
       setTimeout(function(){
         var s=$('st-ev'); if(s) s.value=eid;
@@ -1922,12 +1931,8 @@ function renderStatus(){
   var selMbs=MB.filter(function(m){return stMbSel[m.name];});
   var membersToShow=selMbs.length?selMbs.map(function(m){return m.name;}):MB.map(function(m){return m.name;});
 
-  // 取得目前相冊 filter（直接從 stAlbIdx 讀，不依賴 select DOM value）
-  var albFilter='';
-  if(stAlbIdx>0){
-    var evAlbs=_stEvAlbs(evId);
-    if(evAlbs[stAlbIdx-1]) albFilter=evAlbs[stAlbIdx-1].id;
-  }
+  // 取得目前相冊 filter（直接從 stAlbId 讀，最可靠）
+  var albFilter=stAlbId||'';
 
   // 取物品（固定顯示此活動/相冊的所有物品）
   var its=IT.filter(function(x){return x.eventId===evId;});
