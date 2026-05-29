@@ -421,16 +421,11 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="23,4 23,10 17,10"/><polyline points="1,20 1,14 7,14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>同步
           </button>
         </div>
-        <!-- 第一列：活動 ◀ 下拉 ▶ -->
+        <!-- 單行：[活動下拉] [◀ 相冊下拉 ▶] -->
         <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--sf);border-bottom:1px solid var(--bd)">
-          <button class="cnb" onclick="stEvShift(-1)" style="flex-shrink:0;touch-action:manipulation">◀</button>
-          <select id="st-ev" class="cns" onchange="onStEv()" style="flex:1;font-weight:700;text-align:center"></select>
-          <button class="cnb" onclick="stEvShift(1)" style="flex-shrink:0;touch-action:manipulation">▶</button>
-        </div>
-        <!-- 第二列：相冊 ◀ 下拉 ▶ -->
-        <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--sf);border-bottom:1px solid var(--bd)">
+          <select id="st-ev" class="cns" onchange="onStEv()" style="flex:1;font-weight:700;text-align:center;text-align-last:center;min-width:0"></select>
           <button class="cnb" onclick="stAlbShift(-1)" style="flex-shrink:0;touch-action:manipulation">◀</button>
-          <select id="st-alb" class="cns" onchange="onStAlb()" style="flex:1;text-align:center">
+          <select id="st-alb" class="cns" onchange="onStAlb()" style="flex:1;text-align:center;text-align-last:center;min-width:0">
             <option value="">全部相冊</option>
           </select>
           <button class="cnb" onclick="stAlbShift(1)" style="flex-shrink:0;touch-action:manipulation">▶</button>
@@ -446,7 +441,7 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
             <span style="font-size:11px;color:var(--tx3)">顯示：</span>
             <label style="display:flex;align-items:center;gap:2px;font-size:12px;cursor:pointer;touch-action:manipulation"><input type="checkbox" id="st-unowned" checked onchange="renderStatus()" style="accent-color:var(--red)">未持有</label>
-            <label style="display:flex;align-items:center;gap:2px;font-size:12px;cursor:pointer;touch-action:manipulation"><input type="checkbox" id="st-extra" onchange="renderStatus()" style="accent-color:var(--amber)">多餘</label>
+            <label style="display:flex;align-items:center;gap:2px;font-size:12px;cursor:pointer;touch-action:manipulation"><input type="checkbox" id="st-extra" checked onchange="renderStatus()" style="accent-color:var(--amber)">多餘</label>
             <label style="display:flex;align-items:center;gap:2px;font-size:12px;cursor:pointer;touch-action:manipulation"><input type="checkbox" id="st-owned" onchange="renderStatus()" style="accent-color:var(--green)">已持有</label>
             <button onclick="stClearFilter()" style="margin-left:auto;background:none;border:1px solid var(--bd);border-radius:7px;padding:3px 8px;font-size:11px;color:var(--tx3);cursor:pointer;touch-action:manipulation">清除篩選</button>
           </div>
@@ -1919,10 +1914,10 @@ function renderStatus(){
       var lbl='',col='';
       if(isExtra){
         if(!showExtra) continue;
-        lbl='多餘';col='var(--amber-tx)';
+        lbl='多餘';col='var(--green-tx)';
       }else if(isOwned){
         if(!showOwned) continue;
-        lbl='已持有';col='var(--green-tx)';
+        lbl='已持有';col='var(--amber-tx)';
       }else{
         if(!showUnowned) continue;
         lbl='未持有';col='var(--red-tx)';
