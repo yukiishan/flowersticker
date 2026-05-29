@@ -1802,24 +1802,39 @@ function _stSyncAlbSel(evId){
   var opts='<option value="">全部相冊</option>';
   for(var i=0;i<albs.length;i++) opts+='<option value="'+albs[i].id+'">'+sf(albs[i].name)+'</option>';
   sel.innerHTML=opts;
-  if(stAlbIdx>0&&stAlbIdx<=albs.length) sel.value=albs[stAlbIdx-1].id;
-  else{ sel.value=''; stAlbIdx=0; }
+  // iOS 需 setTimeout 確保 innerHTML 渲染後再回填 value
+  var targetVal=(stAlbIdx>0&&stAlbIdx<=albs.length)?albs[stAlbIdx-1].id:'';
+  if(!targetVal) stAlbIdx=0;
+  setTimeout(function(){
+    var s=$('st-alb'); if(s) s.value=targetVal;
+  },0);
 }
-// 初始化活動選單
+// 初始化活動選單（只在 E 變動時重建，避免 iOS value 回填時序問題）
+var _stEvCache=''; // 上次建立時的 E 長度+id 快照
 function _stInitEvSel(){
   var sel=$('st-ev'); if(!sel) return;
   var revE=_stRevE();
-  var opts='<option value="">-- 選擇活動 --</option>';
-  for(var i=0;i<revE.length;i++) opts+='<option value="'+revE[i].id+'">'+sf(revE[i].name)+'</option>';
-  sel.innerHTML=opts;
+  // 建立快照 key，有變動才重建 innerHTML
+  var snap=revE.map(function(e){return e.id;}).join(',');
+  if(snap!==_stEvCache){
+    _stEvCache=snap;
+    var opts='<option value="">-- 選擇活動 --</option>';
+    for(var i=0;i<revE.length;i++) opts+='<option value="'+revE[i].id+'">'+sf(revE[i].name)+'</option>';
+    sel.innerHTML=opts;
+  }
   if(revE.length>0){
     stEvIdx=Math.min(stEvIdx,revE.length-1);
-    sel.value=revE[stEvIdx].id;
     var evId=revE[stEvIdx].id;
     var albs=_stEvAlbs(evId);
     // 預設顯示第一個相冊（若尚未選過）
     if(stAlbIdx===0&&albs.length>0) stAlbIdx=1;
-    _stSyncAlbSel(evId);
+    // iOS 需 setTimeout 確保 innerHTML 已渲染再回填 value
+    (function(id,idx,eid){
+      setTimeout(function(){
+        var s=$('st-ev'); if(s) s.value=eid;
+        _stSyncAlbSel(eid);
+      },0);
+    })(stEvIdx,stAlbIdx,evId);
   }
 }
 // 更新成員 chips（只在 MB 變動時重建）
