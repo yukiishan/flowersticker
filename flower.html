@@ -1004,13 +1004,10 @@ function fetchAll(cb){
     }
 
     MB = (d.members && d.members.length) ? d.members : defMB();
-    var cloudAlbums = (d.albums || []).map(function(a){
+    // 相冊直接用雲端資料（相冊只在活動維護新增，不需要智慧合併）
+    AL = (d.albums || []).map(function(a){
       return {id:a.id, name:a.name, eventId:a.eventId||''};
     });
-    var cloudAlMap={};
-    for(var ca=0;ca<cloudAlbums.length;ca++) cloudAlMap[cloudAlbums[ca].id]=true;
-    var localOnlyAlbums=AL.filter(function(a){return !cloudAlMap[a.id];});
-    AL = cloudAlbums.concat(localOnlyAlbums);
 
     // 同樣對 TR/GR 做智慧合併
     var cloudTrades = d.trades || [];
