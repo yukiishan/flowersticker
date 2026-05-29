@@ -85,7 +85,7 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
 .ah{
   background:var(--accent);color:#fff;
   padding:13px 14px;
-  padding-top:calc(env(safe-area-inset-top,0px) + 13px);
+  padding-top:13px; /* safe-area handled by #statusBar */
   display:flex;align-items:center;gap:8px;flex-shrink:0
 }
 .pg-panel .ah{padding-top:13px}
@@ -199,7 +199,7 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
 .dn{
   background:var(--sf);border-bottom:1px solid var(--bd);
   padding:12px 14px;
-  padding-top:calc(env(safe-area-inset-top,0px) + 12px);
+  padding-top:12px; /* safe-area handled by #statusBar */
   display:flex;align-items:center;gap:8px;flex-shrink:0;
   overflow:visible
 }
@@ -412,6 +412,48 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
       <div class="ps"><div class="cl" id="evL"></div></div>
     </div>
 
+    <!-- PAGE 1.5 狀態 -->
+    <div class="page" id="pg-st">
+      <div class="ph">
+        <div class="ah">
+          <h1>狀態總覽</h1>
+          <button class="hb" onclick="doSync()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="23,4 23,10 17,10"/><polyline points="1,20 1,14 7,14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>同步
+          </button>
+        </div>
+        <!-- 活動＋相冊選擇列 -->
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 13px;background:var(--sf);border-bottom:1px solid var(--bd)">
+          <button class="cnb" onclick="stEvShift(-1)" style="flex-shrink:0">◀</button>
+          <div style="flex:1;text-align:center">
+            <select id="st-ev" class="cns" onchange="onStEv()" style="font-weight:700"></select>
+          </div>
+          <button class="cnb" onclick="stEvShift(1)" style="flex-shrink:0">▶</button>
+          <select id="st-alb" class="cns" onchange="renderStatus()" style="max-width:120px">
+            <option value="">全部相冊</option>
+          </select>
+        </div>
+        <!-- 篩選條件列 -->
+        <div style="background:var(--sf2);border-bottom:1px solid var(--bd);padding:8px 13px">
+          <!-- 成員選擇（checkbox chips） -->
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap">
+            <label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--tx2);cursor:pointer;touch-action:manipulation">
+              <input type="checkbox" id="st-all" onchange="stToggleAll(this.checked)" style="width:14px;height:14px;accent-color:var(--accent)">全選
+            </label>
+            <div id="stMbChips" style="display:flex;flex-wrap:wrap;gap:4px;flex:1"></div>
+          </div>
+          <!-- 狀態篩選 + 清除 -->
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span style="font-size:11px;color:var(--tx3)">顯示：</span>
+            <label style="display:flex;align-items:center;gap:2px;font-size:12px;cursor:pointer;touch-action:manipulation"><input type="checkbox" id="st-unowned" checked onchange="renderStatus()" style="accent-color:var(--red)">未持有</label>
+            <label style="display:flex;align-items:center;gap:2px;font-size:12px;cursor:pointer;touch-action:manipulation"><input type="checkbox" id="st-extra" onchange="renderStatus()" style="accent-color:var(--amber)">多餘</label>
+            <label style="display:flex;align-items:center;gap:2px;font-size:12px;cursor:pointer;touch-action:manipulation"><input type="checkbox" id="st-owned" onchange="renderStatus()" style="accent-color:var(--green)">已持有</label>
+            <button onclick="stClearFilter()" style="margin-left:auto;background:none;border:1px solid var(--bd);border-radius:7px;padding:3px 8px;font-size:11px;color:var(--tx3);cursor:pointer;touch-action:manipulation">清除篩選</button>
+          </div>
+        </div>
+      </div>
+      <div class="ps" id="stGrid" style="padding:8px 10px"></div>
+    </div>
+
     <!-- PAGE 2 畢業 -->
     <div class="page" id="pg-gr">
       <div class="ph">
@@ -512,6 +554,7 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
   <div id="tabSp"></div>
   <div id="tabBar">
     <button class="tb on" id="tb-ev" onclick="goPage('ev')"><div class="tb-ic"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg></div>活動</button>
+    <button class="tb" id="tb-st" onclick="goPage('st')"><div class="tb-ic"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>狀態</button>
     <button class="tb" id="tb-gr" onclick="goPage('gr')"><div class="tb-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0112 0v2"/></svg></div>畢業</button>
     <button class="tb" id="tb-tr" onclick="goPage('tr')"><div class="tb-ic"><svg viewBox="0 0 24 24"><polyline points="17,1 21,5 17,9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7,23 3,19 7,15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg></div>交換</button>
     <button class="tb" id="tb-cal" onclick="goPage('cal')"><div class="tb-ic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>行事曆</button>
@@ -1015,7 +1058,7 @@ function startApp(){
     if(!isSaving) fetchAll(function(ok){if(ok) renderAll();});
   }, 2000);
 }
-function renderAll(){rEv();rGr();renderCal();renderTrList();updSC();refreshSels();}
+function renderAll(){rEv();rGr();renderCal();renderTrList();renderStatus();updSC();refreshSels();}
 
 // ── panel helpers ──
 function op(id){
@@ -1044,6 +1087,7 @@ function goPage(tab){
   if(tb) tb.classList.add('on');
   if(tab==='cal') renderCal();
   if(tab==='tr') renderTrList();
+  if(tab==='st') renderStatus();
 }
 
 // ══ PAGE 1: EVENTS ══
@@ -1708,6 +1752,221 @@ function initCal(){
   for(var i=cy-1;i<=cy+3;i++){var o=document.createElement('option');o.value=i;o.textContent=i+'年';y.appendChild(o);}
   y.value=cy;$('calM').value=new Date().getMonth()+1;
 }
+// ══ PAGE 1.5: 狀態總覽 ══
+var stEvIdx=0; // 目前選中活動的 index（在 E 陣列中）
+var stMbSel={}; // {memberName: true/false}
+
+function onStEv(){
+  var sel=$('st-ev');
+  if(!sel) return;
+  // 找到選中活動在 E 中的 index
+  var evId=sel.value;
+  var revE=E.slice().reverse();
+  for(var i=0;i<revE.length;i++){if(revE[i].id===evId){stEvIdx=i;break;}}
+  // 更新相冊清單
+  _stRenderAlbSel(evId);
+  renderStatus();
+}
+
+function stEvShift(d){
+  var revE=E.slice().reverse();
+  if(!revE.length) return;
+  stEvIdx=((stEvIdx+d)+revE.length)%revE.length;
+  var sel=$('st-ev');
+  if(sel) sel.value=revE[stEvIdx].id;
+  _stRenderAlbSel(revE[stEvIdx].id);
+  renderStatus();
+}
+
+function _stRenderAlbSel(evId){
+  var sel=$('st-alb');
+  if(!sel) return;
+  var albs=AL.filter(function(a){return a.eventId===evId;});
+  var opts='<option value="">全部相冊</option>';
+  for(var i=0;i<albs.length;i++) opts+='<option value="'+albs[i].id+'">'+sf(albs[i].name)+'</option>';
+  sel.innerHTML=opts;
+}
+
+function _stInitEvSel(){
+  var sel=$('st-ev');
+  if(!sel) return;
+  var revE=E.slice().reverse();
+  var opts='<option value="">-- 選擇活動 --</option>';
+  for(var i=0;i<revE.length;i++) opts+='<option value="'+revE[i].id+'">'+sf(revE[i].name)+'</option>';
+  sel.innerHTML=opts;
+  if(revE.length>0){
+    stEvIdx=Math.min(stEvIdx,revE.length-1);
+    sel.value=revE[stEvIdx].id;
+    _stRenderAlbSel(revE[stEvIdx].id);
+  }
+}
+
+function stToggleAll(checked){
+  var chips=$('stMbChips');
+  if(!chips) return;
+  var cbs=chips.querySelectorAll('input[type=checkbox]');
+  for(var i=0;i<cbs.length;i++){
+    cbs[i].checked=checked;
+    stMbSel[cbs[i].value]=checked;
+  }
+  renderStatus();
+}
+
+function stClearFilter(){
+  // 清除所有成員勾選
+  var chips=$('stMbChips');
+  if(chips){
+    var cbs=chips.querySelectorAll('input[type=checkbox]');
+    for(var i=0;i<cbs.length;i++){cbs[i].checked=false;stMbSel[cbs[i].value]=false;}
+  }
+  var allCb=$('st-all');if(allCb) allCb.checked=false;
+  // 重設狀態篩選：回到只顯示未持有
+  var uo=$('st-unowned'),eo=$('st-extra'),oo=$('st-owned');
+  if(uo){uo.checked=true;}
+  if(eo){eo.checked=false;}
+  if(oo){oo.checked=false;}
+  renderStatus();
+}
+
+function renderStatus(){
+  // 初始化活動選單
+  _stInitEvSel();
+  var el=$('stGrid');
+  if(!el) return;
+
+  var sel=$('st-ev');
+  var evId=sel?sel.value:'';
+  if(!evId){
+    el.innerHTML='<div style="text-align:center;padding:32px;color:var(--tx3);font-size:13px">請選擇活動</div>';
+    return;
+  }
+
+  // 更新成員 chips
+  var chips=$('stMbChips');
+  if(chips&&chips.children.length!==MB.length){
+    var chHtml='';
+    for(var mi=0;mi<MB.length;mi++){
+      var m=MB[mi];
+      var checked=stMbSel[m.name]?'checked':'';
+      chHtml+='<label style="display:flex;align-items:center;gap:2px;font-size:11px;cursor:pointer;touch-action:manipulation;background:var(--sf);border:1.5px solid var(--bd);border-radius:12px;padding:2px 7px;white-space:nowrap">'
+        +'<input type="checkbox" value="'+sf(m.name)+'" '+checked+' onchange="stMbSel[this.value]=this.checked;_stSyncAllCb();renderStatus()" style="width:12px;height:12px;accent-color:var(--accent)">'+sf(m.name)+'</label>';
+    }
+    chips.innerHTML=chHtml;
+  }
+
+  // 取得篩選條件
+  var showUnowned=($('st-unowned')||{}).checked;
+  var showExtra=($('st-extra')||{}).checked;
+  var showOwned=($('st-owned')||{}).checked;
+  var albFilter=($('st-alb')||{}).value||'';
+
+  // 取得選中成員（若無選中則顯示全部）
+  var selMembers=MB.filter(function(m){return stMbSel[m.name];}).map(function(m){return m.name;});
+  var membersToShow=selMembers.length?selMembers:MB.map(function(m){return m.name;});
+
+  // 取得物品
+  var its=IT.filter(function(x){return x.eventId===evId;});
+  if(albFilter) its=its.filter(function(x){return x.albumId===albFilter;});
+  if(!its.length){
+    el.innerHTML='<div style="text-align:center;padding:32px;color:var(--tx3);font-size:13px">此活動尚無物品</div>';
+    return;
+  }
+
+  // 依相冊分組
+  var byAlb={};var noAlb=[];
+  for(var i=0;i<its.length;i++){
+    var it=its[i];
+    if(!it.albumId){noAlb.push(it);continue;}
+    if(!byAlb[it.albumId]) byAlb[it.albumId]={alb:AL.filter(function(a){return a.id===it.albumId;})[0],items:[]};
+    byAlb[it.albumId].items.push(it);
+  }
+
+  // 建立 grid
+  el.innerHTML='';
+
+  function renderSection(items, albName){
+    if(!items.length) return;
+    if(albName){
+      var hd=document.createElement('div');
+      hd.style.cssText='font-size:11px;font-weight:700;color:var(--tx3);padding:8px 2px 4px;letter-spacing:.4px;width:100%';
+      hd.textContent=albName;
+      el.appendChild(hd);
+    }
+    // 網格容器
+    var grid=document.createElement('div');
+    grid.style.cssText='display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px';
+    for(var j=0;j<items.length;j++){
+      var it=items[j];
+      var stN=Number(it.stars)||0;
+      var stStr=stN?new Array(stN+1).join('★'):'';
+      // 收集此物品各成員的狀態
+      var statusLines=[];
+      for(var k=0;k<membersToShow.length;k++){
+        var mn=membersToShow[k];
+        var isOwned=(it.owned||[]).indexOf(mn)>=0;
+        var isExtra=(it.extra||[]).indexOf(mn)>=0;
+        var stateLabel='';var stateColor='';
+        if(!showUnowned&&!isOwned&&!isExtra) continue;
+        if(!showOwned&&isOwned&&!isExtra) continue;
+        if(!showExtra&&isExtra) continue;
+        if(isExtra){stateLabel='多餘';stateColor='var(--amber-tx)';}
+        else if(isOwned){stateLabel='已持有';stateColor='var(--green-tx)';}
+        else{stateLabel='未持有';stateColor='var(--red-tx)';}
+        statusLines.push({name:mn,label:stateLabel,color:stateColor});
+      }
+      if(!statusLines.length) continue; // 此物品無符合條件的成員，跳過
+      var card=document.createElement('div');
+      card.style.cssText='background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:4px;cursor:pointer;touch-action:manipulation';
+      card.onclick=(function(id){return function(){openItEdit(id);};})(it.id);
+      var nm=document.createElement('div');
+      nm.style.cssText='font-size:12px;font-weight:700;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+      nm.textContent=it.name;
+      card.appendChild(nm);
+      if(stStr){
+        var st=document.createElement('div');
+        st.style.cssText='font-size:10px;color:var(--amber)';
+        st.textContent=stStr;
+        card.appendChild(st);
+      }
+      for(var s=0;s<statusLines.length;s++){
+        var row=document.createElement('div');
+        row.style.cssText='font-size:10px;display:flex;align-items:center;gap:3px';
+        var dot=document.createElement('span');
+        dot.style.cssText='width:7px;height:7px;border-radius:50%;background:'+statusLines[s].color+';flex-shrink:0;display:inline-block';
+        var txt=document.createElement('span');
+        txt.style.cssText='color:'+statusLines[s].color+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+        txt.textContent=statusLines[s].name+' '+statusLines[s].label;
+        row.appendChild(dot);row.appendChild(txt);
+        card.appendChild(row);
+      }
+      grid.appendChild(card);
+    }
+    if(grid.children.length>0) el.appendChild(grid);
+  }
+
+  var albKeys=Object.keys(byAlb);
+  // 依 AL 順序排序
+  albKeys.sort(function(a,b){
+    var ai=0,bi=0;
+    for(var i=0;i<AL.length;i++){if(AL[i].id===a)ai=i;if(AL[i].id===b)bi=i;}
+    return ai-bi;
+  });
+  for(var ak=0;ak<albKeys.length;ak++){
+    var sec=byAlb[albKeys[ak]];
+    renderSection(sec.items,sec.alb?sec.alb.name:'');
+  }
+  if(noAlb.length) renderSection(noAlb,'');
+
+  if(!el.children.length){
+    el.innerHTML='<div style="text-align:center;padding:32px;color:var(--tx3);font-size:13px">無符合條件的物品</div>';
+  }
+}
+
+function _stSyncAllCb(){
+  var allSel=MB.every(function(m){return stMbSel[m.name];});
+  var allCb=$('st-all');if(allCb) allCb.checked=allSel;
+}
+
 // ══ PAGE 3: 交換清單 ══
 function renderTrList(){
   var el=$('trL');
@@ -2385,7 +2644,7 @@ function refreshSels(){
     ids.forEach(function(id){var el=$(id);if(!el)return;saved.push({el:el,v:el.value});el.innerHTML=opts;});
     setTimeout(function(){saved.forEach(function(o){o.el.value=o.v;});},40);
   }
-  restoreVal(['gr-ev','tr-ev'],evOpts);
+  restoreVal(['gr-ev','tr-ev','st-ev'],evOpts);
   restoreVal(['gr-mb','tr-ma','tr-mb','bk-mb'],mbOpts);
 }
 function exportJSON(){
