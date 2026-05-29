@@ -421,27 +421,28 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="23,4 23,10 17,10"/><polyline points="1,20 1,14 7,14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>同步
           </button>
         </div>
-        <!-- 活動＋相冊選擇列 -->
-        <div style="display:flex;align-items:center;gap:8px;padding:8px 13px;background:var(--sf);border-bottom:1px solid var(--bd)">
-          <button class="cnb" onclick="stEvShift(-1)" style="flex-shrink:0">◀</button>
-          <div style="flex:1;text-align:center">
-            <select id="st-ev" class="cns" onchange="onStEv()" style="font-weight:700"></select>
-          </div>
-          <button class="cnb" onclick="stEvShift(1)" style="flex-shrink:0">▶</button>
-          <select id="st-alb" class="cns" onchange="renderStatus()" style="max-width:120px">
+        <!-- 第一列：活動 ◀ 下拉 ▶ -->
+        <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--sf);border-bottom:1px solid var(--bd)">
+          <button class="cnb" onclick="stEvShift(-1)" style="flex-shrink:0;touch-action:manipulation">◀</button>
+          <select id="st-ev" class="cns" onchange="onStEv()" style="flex:1;font-weight:700;text-align:center"></select>
+          <button class="cnb" onclick="stEvShift(1)" style="flex-shrink:0;touch-action:manipulation">▶</button>
+        </div>
+        <!-- 第二列：相冊 ◀ 下拉 ▶ -->
+        <div style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--sf);border-bottom:1px solid var(--bd)">
+          <button class="cnb" onclick="stAlbShift(-1)" style="flex-shrink:0;touch-action:manipulation">◀</button>
+          <select id="st-alb" class="cns" onchange="onStAlb()" style="flex:1;text-align:center">
             <option value="">全部相冊</option>
           </select>
+          <button class="cnb" onclick="stAlbShift(1)" style="flex-shrink:0;touch-action:manipulation">▶</button>
         </div>
         <!-- 篩選條件列 -->
-        <div style="background:var(--sf2);border-bottom:1px solid var(--bd);padding:8px 13px">
-          <!-- 成員選擇（checkbox chips） -->
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap">
-            <label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--tx2);cursor:pointer;touch-action:manipulation">
+        <div style="background:var(--sf2);border-bottom:1px solid var(--bd);padding:7px 10px">
+          <div style="display:flex;align-items:center;gap:5px;margin-bottom:5px;flex-wrap:wrap">
+            <label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--tx2);cursor:pointer;touch-action:manipulation;white-space:nowrap">
               <input type="checkbox" id="st-all" onchange="stToggleAll(this.checked)" style="width:14px;height:14px;accent-color:var(--accent)">全選
             </label>
             <div id="stMbChips" style="display:flex;flex-wrap:wrap;gap:4px;flex:1"></div>
           </div>
-          <!-- 狀態篩選 + 清除 -->
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
             <span style="font-size:11px;color:var(--tx3)">顯示：</span>
             <label style="display:flex;align-items:center;gap:2px;font-size:12px;cursor:pointer;touch-action:manipulation"><input type="checkbox" id="st-unowned" checked onchange="renderStatus()" style="accent-color:var(--red)">未持有</label>
@@ -1753,138 +1754,192 @@ function initCal(){
   y.value=cy;$('calM').value=new Date().getMonth()+1;
 }
 // ══ PAGE 1.5: 狀態總覽 ══
-var stEvIdx=0; // 目前選中活動的 index（在 E 陣列中）
-var stMbSel={}; // {memberName: true/false}
+var stEvIdx=0;   // 目前選中活動 index（revE 中）
+var stAlbIdx=0;  // 目前選中相冊 index（含「全部」= index 0）
+var stMbSel={};  // {memberName: true/false}
 
+function _stRevE(){ return E.slice().reverse(); }
+function _stEvAlbs(evId){ return AL.filter(function(a){return a.eventId===evId;}); }
+
+// 活動下拉切換
 function onStEv(){
-  var sel=$('st-ev');
-  if(!sel) return;
-  // 找到選中活動在 E 中的 index
-  var evId=sel.value;
-  var revE=E.slice().reverse();
-  for(var i=0;i<revE.length;i++){if(revE[i].id===evId){stEvIdx=i;break;}}
-  // 更新相冊清單
-  _stRenderAlbSel(evId);
+  var sel=$('st-ev'); if(!sel) return;
+  var revE=_stRevE();
+  for(var i=0;i<revE.length;i++){if(revE[i].id===sel.value){stEvIdx=i;break;}}
+  stAlbIdx=0;
+  _stSyncAlbSel(revE[stEvIdx]?revE[stEvIdx].id:'');
   renderStatus();
 }
-
+// 活動箭頭
 function stEvShift(d){
-  var revE=E.slice().reverse();
-  if(!revE.length) return;
+  var revE=_stRevE(); if(!revE.length) return;
   stEvIdx=((stEvIdx+d)+revE.length)%revE.length;
-  var sel=$('st-ev');
-  if(sel) sel.value=revE[stEvIdx].id;
-  _stRenderAlbSel(revE[stEvIdx].id);
+  stAlbIdx=0;
+  var sel=$('st-ev'); if(sel) sel.value=revE[stEvIdx].id;
+  _stSyncAlbSel(revE[stEvIdx].id);
   renderStatus();
 }
-
-function _stRenderAlbSel(evId){
-  var sel=$('st-alb');
-  if(!sel) return;
-  var albs=AL.filter(function(a){return a.eventId===evId;});
+// 相冊下拉切換
+function onStAlb(){
+  var sel=$('st-alb'); if(!sel) return;
+  var evId=($('st-ev')||{}).value||'';
+  var albs=_stEvAlbs(evId);
+  // index 0 = 全部，1~n = 各相冊
+  var val=sel.value;
+  stAlbIdx=0;
+  for(var i=0;i<albs.length;i++){if(albs[i].id===val){stAlbIdx=i+1;break;}}
+  renderStatus();
+}
+// 相冊箭頭
+function stAlbShift(d){
+  var evId=($('st-ev')||{}).value||'';
+  var albs=_stEvAlbs(evId);
+  var total=albs.length+1; // 含「全部」
+  stAlbIdx=((stAlbIdx+d)+total)%total;
+  _stSyncAlbSel(evId);
+  renderStatus();
+}
+// 同步相冊選單顯示
+function _stSyncAlbSel(evId){
+  var sel=$('st-alb'); if(!sel) return;
+  var albs=_stEvAlbs(evId);
   var opts='<option value="">全部相冊</option>';
   for(var i=0;i<albs.length;i++) opts+='<option value="'+albs[i].id+'">'+sf(albs[i].name)+'</option>';
   sel.innerHTML=opts;
+  if(stAlbIdx>0&&stAlbIdx<=albs.length) sel.value=albs[stAlbIdx-1].id;
+  else{ sel.value=''; stAlbIdx=0; }
 }
-
+// 初始化活動選單
 function _stInitEvSel(){
-  var sel=$('st-ev');
-  if(!sel) return;
-  var revE=E.slice().reverse();
+  var sel=$('st-ev'); if(!sel) return;
+  var revE=_stRevE();
   var opts='<option value="">-- 選擇活動 --</option>';
   for(var i=0;i<revE.length;i++) opts+='<option value="'+revE[i].id+'">'+sf(revE[i].name)+'</option>';
   sel.innerHTML=opts;
   if(revE.length>0){
     stEvIdx=Math.min(stEvIdx,revE.length-1);
     sel.value=revE[stEvIdx].id;
-    _stRenderAlbSel(revE[stEvIdx].id);
+    _stSyncAlbSel(revE[stEvIdx].id);
   }
 }
-
-function stToggleAll(checked){
-  var chips=$('stMbChips');
-  if(!chips) return;
-  var cbs=chips.querySelectorAll('input[type=checkbox]');
-  for(var i=0;i<cbs.length;i++){
-    cbs[i].checked=checked;
-    stMbSel[cbs[i].value]=checked;
+// 更新成員 chips（只在 MB 變動時重建）
+function _stRenderChips(){
+  var chips=$('stMbChips'); if(!chips) return;
+  if(chips.childElementCount===MB.length) return; // 未變動
+  var h='';
+  for(var i=0;i<MB.length;i++){
+    var m=MB[i];
+    h+='<label style="display:flex;align-items:center;gap:2px;font-size:11px;cursor:pointer;touch-action:manipulation;background:var(--sf);border:1.5px solid var(--bd);border-radius:12px;padding:2px 7px;white-space:nowrap">'
+      +'<input type="checkbox" value="'+sf(m.name)+'"'+(stMbSel[m.name]?' checked':'')+' onchange="stMbSel[this.value]=this.checked;_stSyncAllCb();renderStatus()" style="width:12px;height:12px;accent-color:var(--accent)">'+sf(m.name)+'</label>';
   }
+  chips.innerHTML=h;
+}
+function stToggleAll(checked){
+  var chips=$('stMbChips'); if(!chips) return;
+  var cbs=chips.querySelectorAll('input[type=checkbox]');
+  for(var i=0;i<cbs.length;i++){cbs[i].checked=checked;stMbSel[cbs[i].value]=checked;}
   renderStatus();
 }
-
+function _stSyncAllCb(){
+  var ok=MB.length>0&&MB.every(function(m){return stMbSel[m.name];});
+  var a=$('st-all'); if(a) a.checked=ok;
+}
 function stClearFilter(){
-  // 清除所有成員勾選
+  stMbSel={};
   var chips=$('stMbChips');
-  if(chips){
-    var cbs=chips.querySelectorAll('input[type=checkbox]');
-    for(var i=0;i<cbs.length;i++){cbs[i].checked=false;stMbSel[cbs[i].value]=false;}
-  }
-  var allCb=$('st-all');if(allCb) allCb.checked=false;
-  // 重設狀態篩選：回到只顯示未持有
+  if(chips){var cbs=chips.querySelectorAll('input[type=checkbox]');for(var i=0;i<cbs.length;i++) cbs[i].checked=false;}
+  var a=$('st-all'); if(a) a.checked=false;
   var uo=$('st-unowned'),eo=$('st-extra'),oo=$('st-owned');
-  if(uo){uo.checked=true;}
-  if(eo){eo.checked=false;}
-  if(oo){oo.checked=false;}
+  if(uo) uo.checked=true; if(eo) eo.checked=false; if(oo) oo.checked=false;
   renderStatus();
 }
 
 function renderStatus(){
-  // 初始化活動選單
   _stInitEvSel();
-  var el=$('stGrid');
-  if(!el) return;
-
-  var sel=$('st-ev');
-  var evId=sel?sel.value:'';
+  _stRenderChips();
+  var el=$('stGrid'); if(!el) return;
+  var evId=($('st-ev')||{}).value||'';
   if(!evId){
     el.innerHTML='<div style="text-align:center;padding:32px;color:var(--tx3);font-size:13px">請選擇活動</div>';
     return;
   }
+  var showUnowned=($('st-unowned')||{}).checked!==false;
+  var showExtra  =!!($('st-extra')||{}).checked;
+  var showOwned  =!!($('st-owned')||{}).checked;
+  // 取得選中成員（無選中 = 全部）
+  var selMbs=MB.filter(function(m){return stMbSel[m.name];});
+  var membersToShow=selMbs.length?selMbs.map(function(m){return m.name;}):MB.map(function(m){return m.name;});
 
-  // 更新成員 chips
-  var chips=$('stMbChips');
-  if(chips&&chips.children.length!==MB.length){
-    var chHtml='';
-    for(var mi=0;mi<MB.length;mi++){
-      var m=MB[mi];
-      var checked=stMbSel[m.name]?'checked':'';
-      chHtml+='<label style="display:flex;align-items:center;gap:2px;font-size:11px;cursor:pointer;touch-action:manipulation;background:var(--sf);border:1.5px solid var(--bd);border-radius:12px;padding:2px 7px;white-space:nowrap">'
-        +'<input type="checkbox" value="'+sf(m.name)+'" '+checked+' onchange="stMbSel[this.value]=this.checked;_stSyncAllCb();renderStatus()" style="width:12px;height:12px;accent-color:var(--accent)">'+sf(m.name)+'</label>';
-    }
-    chips.innerHTML=chHtml;
+  // 取得目前相冊 filter
+  var albFilter='';
+  if(stAlbIdx>0){
+    var evAlbs=_stEvAlbs(evId);
+    if(evAlbs[stAlbIdx-1]) albFilter=evAlbs[stAlbIdx-1].id;
   }
 
-  // 取得篩選條件
-  var showUnowned=($('st-unowned')||{}).checked;
-  var showExtra=($('st-extra')||{}).checked;
-  var showOwned=($('st-owned')||{}).checked;
-  var albFilter=($('st-alb')||{}).value||'';
-
-  // 取得選中成員（若無選中則顯示全部）
-  var selMembers=MB.filter(function(m){return stMbSel[m.name];}).map(function(m){return m.name;});
-  var membersToShow=selMembers.length?selMembers:MB.map(function(m){return m.name;});
-
-  // 取得物品
+  // 取物品（固定顯示此活動/相冊的所有物品）
   var its=IT.filter(function(x){return x.eventId===evId;});
   if(albFilter) its=its.filter(function(x){return x.albumId===albFilter;});
   if(!its.length){
-    el.innerHTML='<div style="text-align:center;padding:32px;color:var(--tx3);font-size:13px">此活動尚無物品</div>';
+    el.innerHTML='<div style="text-align:center;padding:32px;color:var(--tx3);font-size:13px">此活動/相冊尚無物品</div>';
     return;
   }
-
-  // 依相冊分組
-  var byAlb={};var noAlb=[];
+  // 依相冊分組（單一相冊時只有一組）
+  var albOrder=[];
+  var byAlb={};var noAlbItems=[];
   for(var i=0;i<its.length;i++){
     var it=its[i];
-    if(!it.albumId){noAlb.push(it);continue;}
-    if(!byAlb[it.albumId]) byAlb[it.albumId]={alb:AL.filter(function(a){return a.id===it.albumId;})[0],items:[]};
-    byAlb[it.albumId].items.push(it);
+    var aid=it.albumId||'';
+    if(!aid){noAlbItems.push(it);continue;}
+    if(!byAlb[aid]){
+      byAlb[aid]=[];
+      albOrder.push(aid);
+    }
+    byAlb[aid].push(it);
   }
-
-  // 建立 grid
   el.innerHTML='';
-
-  function renderSection(items, albName){
+  function makeCard(it){
+    var stN=Number(it.stars)||0;
+    var stStr=stN?new Array(stN+1).join('★'):'';
+    var card=document.createElement('div');
+    card.style.cssText='background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:3px;cursor:pointer;touch-action:manipulation;min-height:72px';
+    card.onclick=(function(id){return function(){openItEdit(id);};})(it.id);
+    // 物品名
+    var nm=document.createElement('div');
+    nm.style.cssText='font-size:12px;font-weight:700;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+    nm.textContent=it.name;
+    card.appendChild(nm);
+    // 星級
+    if(stStr){var st=document.createElement('div');st.style.cssText='font-size:10px;color:var(--amber)';st.textContent=stStr;card.appendChild(st);}
+    // 各成員狀態（依篩選條件，物品一定顯示，成員清單可為空）
+    for(var k=0;k<membersToShow.length;k++){
+      var mn=membersToShow[k];
+      var isOwned=(it.owned||[]).indexOf(mn)>=0;
+      var isExtra=(it.extra||[]).indexOf(mn)>=0;
+      var lbl='',col='';
+      if(isExtra){
+        if(!showExtra) continue;
+        lbl='多餘';col='var(--amber-tx)';
+      }else if(isOwned){
+        if(!showOwned) continue;
+        lbl='已持有';col='var(--green-tx)';
+      }else{
+        if(!showUnowned) continue;
+        lbl='未持有';col='var(--red-tx)';
+      }
+      var row=document.createElement('div');
+      row.style.cssText='font-size:10px;display:flex;align-items:center;gap:3px';
+      var dot=document.createElement('span');
+      dot.style.cssText='width:6px;height:6px;border-radius:50%;background:'+col+';flex-shrink:0;display:inline-block';
+      var txt=document.createElement('span');
+      txt.style.cssText='color:'+col+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+      txt.textContent=mn+' '+lbl;
+      row.appendChild(dot);row.appendChild(txt);
+      card.appendChild(row);
+    }
+    return card;
+  }
+  function renderSection(items,albName){
     if(!items.length) return;
     if(albName){
       var hd=document.createElement('div');
@@ -1892,79 +1947,23 @@ function renderStatus(){
       hd.textContent=albName;
       el.appendChild(hd);
     }
-    // 網格容器
     var grid=document.createElement('div');
     grid.style.cssText='display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px';
-    for(var j=0;j<items.length;j++){
-      var it=items[j];
-      var stN=Number(it.stars)||0;
-      var stStr=stN?new Array(stN+1).join('★'):'';
-      // 收集此物品各成員的狀態
-      var statusLines=[];
-      for(var k=0;k<membersToShow.length;k++){
-        var mn=membersToShow[k];
-        var isOwned=(it.owned||[]).indexOf(mn)>=0;
-        var isExtra=(it.extra||[]).indexOf(mn)>=0;
-        var stateLabel='';var stateColor='';
-        if(!showUnowned&&!isOwned&&!isExtra) continue;
-        if(!showOwned&&isOwned&&!isExtra) continue;
-        if(!showExtra&&isExtra) continue;
-        if(isExtra){stateLabel='多餘';stateColor='var(--amber-tx)';}
-        else if(isOwned){stateLabel='已持有';stateColor='var(--green-tx)';}
-        else{stateLabel='未持有';stateColor='var(--red-tx)';}
-        statusLines.push({name:mn,label:stateLabel,color:stateColor});
-      }
-      if(!statusLines.length) continue; // 此物品無符合條件的成員，跳過
-      var card=document.createElement('div');
-      card.style.cssText='background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:4px;cursor:pointer;touch-action:manipulation';
-      card.onclick=(function(id){return function(){openItEdit(id);};})(it.id);
-      var nm=document.createElement('div');
-      nm.style.cssText='font-size:12px;font-weight:700;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
-      nm.textContent=it.name;
-      card.appendChild(nm);
-      if(stStr){
-        var st=document.createElement('div');
-        st.style.cssText='font-size:10px;color:var(--amber)';
-        st.textContent=stStr;
-        card.appendChild(st);
-      }
-      for(var s=0;s<statusLines.length;s++){
-        var row=document.createElement('div');
-        row.style.cssText='font-size:10px;display:flex;align-items:center;gap:3px';
-        var dot=document.createElement('span');
-        dot.style.cssText='width:7px;height:7px;border-radius:50%;background:'+statusLines[s].color+';flex-shrink:0;display:inline-block';
-        var txt=document.createElement('span');
-        txt.style.cssText='color:'+statusLines[s].color+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
-        txt.textContent=statusLines[s].name+' '+statusLines[s].label;
-        row.appendChild(dot);row.appendChild(txt);
-        card.appendChild(row);
-      }
-      grid.appendChild(card);
-    }
-    if(grid.children.length>0) el.appendChild(grid);
+    for(var j=0;j<items.length;j++) grid.appendChild(makeCard(items[j]));
+    el.appendChild(grid);
   }
-
-  var albKeys=Object.keys(byAlb);
-  // 依 AL 順序排序
-  albKeys.sort(function(a,b){
+  // 依 AL 順序排列相冊
+  albOrder.sort(function(a,b){
     var ai=0,bi=0;
     for(var i=0;i<AL.length;i++){if(AL[i].id===a)ai=i;if(AL[i].id===b)bi=i;}
     return ai-bi;
   });
-  for(var ak=0;ak<albKeys.length;ak++){
-    var sec=byAlb[albKeys[ak]];
-    renderSection(sec.items,sec.alb?sec.alb.name:'');
+  for(var ak=0;ak<albOrder.length;ak++){
+    var aid2=albOrder[ak];
+    var alb2=AL.filter(function(a){return a.id===aid2;})[0];
+    renderSection(byAlb[aid2],alb2?alb2.name:'');
   }
-  if(noAlb.length) renderSection(noAlb,'');
-
-  if(!el.children.length){
-    el.innerHTML='<div style="text-align:center;padding:32px;color:var(--tx3);font-size:13px">無符合條件的物品</div>';
-  }
-}
-
-function _stSyncAllCb(){
-  var allSel=MB.every(function(m){return stMbSel[m.name];});
-  var allCb=$('st-all');if(allCb) allCb.checked=allSel;
+  if(noAlbItems.length) renderSection(noAlbItems,'');
 }
 
 // ══ PAGE 3: 交換清單 ══
