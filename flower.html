@@ -1834,15 +1834,15 @@ function _stInitEvSel(){
     stEvIdx=Math.min(stEvIdx,revE.length-1);
     var evId=revE[stEvIdx].id;
     var albs=_stEvAlbs(evId);
-    // 預設顯示第一個相冊（若尚未選過）
+    // 預設顯示第一個相冊（同步設定，讓 renderStatus 直接讀到正確的 stAlbIdx）
     if(stAlbIdx===0&&albs.length>0) stAlbIdx=1;
-    // iOS 需 setTimeout 確保 innerHTML 已渲染再回填 value
-    (function(id,idx,eid){
+    // iOS 需 setTimeout 確保 innerHTML 已渲染再回填 select value（不影響 stAlbIdx）
+    (function(eid){
       setTimeout(function(){
         var s=$('st-ev'); if(s) s.value=eid;
         _stSyncAlbSel(eid);
       },0);
-    })(stEvIdx,stAlbIdx,evId);
+    })(evId);
   }
 }
 // 更新成員 chips（只在 MB 變動時重建）
@@ -1904,7 +1904,13 @@ function renderStatus(){
   _stRenderChips();
   stUpdateSummary();
   var el=$('stGrid'); if(!el) return;
-  var evId=($('st-ev')||{}).value||'';
+  // 直接從 JS 變數取活動 id，避免 iOS setTimeout 回填 select 尚未完成的問題
+  var revE=_stRevE();
+  var evId='';
+  if(revE.length>0){
+    stEvIdx=Math.min(stEvIdx,revE.length-1);
+    evId=revE[stEvIdx].id;
+  }
   if(!evId){
     el.innerHTML='<div style="text-align:center;padding:32px;color:var(--tx3);font-size:13px">請選擇活動</div>';
     return;
@@ -1916,7 +1922,7 @@ function renderStatus(){
   var selMbs=MB.filter(function(m){return stMbSel[m.name];});
   var membersToShow=selMbs.length?selMbs.map(function(m){return m.name;}):MB.map(function(m){return m.name;});
 
-  // 取得目前相冊 filter
+  // 取得目前相冊 filter（直接從 stAlbIdx 讀，不依賴 select DOM value）
   var albFilter='';
   if(stAlbIdx>0){
     var evAlbs=_stEvAlbs(evId);
@@ -1933,88 +1939,81 @@ function renderStatus(){
   // 依相冊分組（單一相冊時只有一組）
   var albOrder=[];
   var byAlb={};var noAlbItems=[];
-  for(var i=0;i<its.length;i++){
-    var it=its[i];
-    var aid=it.albumId||'';
-    if(!aid){noAlbItems.push(it);continue;}
-    if(!byAlb[aid]){
-      byAlb[aid]=[];
-      albOrder.push(aid);
-    }
-    byAlb[aid].push(it);
+  for(var gi=0;gi<its.length;gi++){
+    var git=its[gi];
+    var gaid=git.albumId||'';
+    if(!gaid){noAlbItems.push(git);continue;}
+    if(!byAlb[gaid]){byAlb[gaid]=[];albOrder.push(gaid);}
+    byAlb[gaid].push(git);
   }
   el.innerHTML='';
-  function makeCard(it){
-    var stN=Number(it.stars)||0;
-    var stStr=stN?new Array(stN+1).join('★'):'';
+  function makeCard(cit){
+    var cstN=Number(cit.stars)||0;
+    var cstStr=cstN?new Array(cstN+1).join('★'):'';
     var card=document.createElement('div');
     card.style.cssText='background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:3px;cursor:pointer;touch-action:manipulation;min-height:72px';
-    card.onclick=(function(id){return function(){openItEdit(id);};})(it.id);
-    // 物品名
-    var nm=document.createElement('div');
-    nm.style.cssText='font-size:12px;font-weight:700;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
-    nm.textContent=it.name;
-    card.appendChild(nm);
-    // 星級
-    if(stStr){var stEl=document.createElement('div');stEl.style.cssText='font-size:10px;color:var(--amber)';stEl.textContent=stStr;card.appendChild(stEl);}
-    // 各成員狀態（依篩選條件，物品一定顯示，成員清單可為空）
-    for(var k=0;k<membersToShow.length;k++){
-      var mn=membersToShow[k];
-      var isOwned=(it.owned||[]).indexOf(mn)>=0;
-      var isExtra=(it.extra||[]).indexOf(mn)>=0;
-      var lbl='',col='';
-      if(isExtra){
+    card.onclick=(function(cid){return function(){openItEdit(cid);};})(cit.id);
+    var cnm=document.createElement('div');
+    cnm.style.cssText='font-size:12px;font-weight:700;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+    cnm.textContent=cit.name;
+    card.appendChild(cnm);
+    if(cstStr){var cstEl=document.createElement('div');cstEl.style.cssText='font-size:10px;color:var(--amber)';cstEl.textContent=cstStr;card.appendChild(cstEl);}
+    for(var mk=0;mk<membersToShow.length;mk++){
+      var cmn=membersToShow[mk];
+      var cisOwned=(cit.owned||[]).indexOf(cmn)>=0;
+      var cisExtra=(cit.extra||[]).indexOf(cmn)>=0;
+      var clbl='',ccol='';
+      if(cisExtra){
         if(!showExtra) continue;
-        lbl='多餘';col='var(--green-tx)';
-      }else if(isOwned){
+        clbl='多餘';ccol='var(--green-tx)';
+      }else if(cisOwned){
         if(!showOwned) continue;
-        lbl='已持有';col='var(--amber-tx)';
+        clbl='已持有';ccol='var(--amber-tx)';
       }else{
         if(!showUnowned) continue;
-        lbl='未持有';col='var(--red-tx)';
+        clbl='未持有';ccol='var(--red-tx)';
       }
-      var row=document.createElement('div');
-      row.style.cssText='font-size:10px;display:flex;align-items:center;gap:3px';
-      var dot=document.createElement('span');
-      dot.style.cssText='width:6px;height:6px;border-radius:50%;background:'+col+';flex-shrink:0;display:inline-block';
-      var txt=document.createElement('span');
-      txt.style.cssText='color:'+col+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
-      txt.textContent=mn+' '+lbl;
-      row.appendChild(dot);row.appendChild(txt);
-      card.appendChild(row);
+      var crow=document.createElement('div');
+      crow.style.cssText='font-size:10px;display:flex;align-items:center;gap:3px';
+      var cdot=document.createElement('span');
+      cdot.style.cssText='width:6px;height:6px;border-radius:50%;background:'+ccol+';flex-shrink:0;display:inline-block';
+      var ctxt=document.createElement('span');
+      ctxt.style.cssText='color:'+ccol+';overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+      ctxt.textContent=cmn+' '+clbl;
+      crow.appendChild(cdot);crow.appendChild(ctxt);
+      card.appendChild(crow);
     }
     return card;
   }
-  function renderSection(items,albName){
-    if(!items.length) return;
-    if(albName){
-      var hd=document.createElement('div');
-      hd.style.cssText='font-size:11px;font-weight:700;color:var(--tx3);padding:8px 2px 4px;letter-spacing:.4px;width:100%';
-      hd.textContent=albName;
-      el.appendChild(hd);
+  function renderSection(ritems,ralbName){
+    if(!ritems.length) return;
+    if(ralbName){
+      var rhd=document.createElement('div');
+      rhd.style.cssText='font-size:11px;font-weight:700;color:var(--tx3);padding:8px 2px 4px;letter-spacing:.4px;width:100%';
+      rhd.textContent=ralbName;
+      el.appendChild(rhd);
     }
-    var grid=document.createElement('div');
-    grid.style.cssText='display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px';
-    for(var j=0;j<items.length;j++) grid.appendChild(makeCard(items[j]));
-    el.appendChild(grid);
+    var rgrid=document.createElement('div');
+    rgrid.style.cssText='display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px';
+    for(var rj=0;rj<ritems.length;rj++) rgrid.appendChild(makeCard(ritems[rj]));
+    el.appendChild(rgrid);
   }
-  // 依 AL 順序排列相冊（找不到的排最後）
-  albOrder.sort(function(a,b){
-    var ai=-1,bi=-1;
-    for(var i=0;i<AL.length;i++){
-      if(AL[i].id===a) ai=i;
-      if(AL[i].id===b) bi=i;
+  // 依 AL 順序排列相冊
+  albOrder.sort(function(sa,sb){
+    var sai=-1,sbi=-1;
+    for(var si=0;si<AL.length;si++){
+      if(AL[si].id===sa) sai=si;
+      if(AL[si].id===sb) sbi=si;
     }
-    if(ai<0) ai=99999;
-    if(bi<0) bi=99999;
-    return ai-bi;
+    if(sai<0) sai=99999;
+    if(sbi<0) sbi=99999;
+    return sai-sbi;
   });
-  // 無相冊的物品排最前（第一個相冊前）
   if(noAlbItems.length) renderSection(noAlbItems,'');
   for(var ak=0;ak<albOrder.length;ak++){
-    var aid2=albOrder[ak];
-    var alb2=AL.filter(function(a){return a.id===aid2;})[0];
-    renderSection(byAlb[aid2],alb2?alb2.name:'');
+    var akid=albOrder[ak];
+    var akalb=AL.filter(function(aa){return aa.id===akid;})[0];
+    renderSection(byAlb[akid],akalb?akalb.name:'');
   }
 }
 
