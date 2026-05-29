@@ -23,13 +23,14 @@ select,input{-webkit-tap-highlight-color:rgba(0,0,0,0) !important}
   --red:#B87070;--red-bg:#EEE0DF;--red-tx:#6B3030;
   --tab-h:62px;
 }
-html{background:#9A7A78;height:100%}
+html{background:#9A7A78;height:100%;overflow:hidden}
 body{margin:0;padding:0;height:100%;background:#9A7A78;
   font-family:-apple-system,'Noto Sans TC','PingFang TC',sans-serif;
-  -webkit-font-smoothing:antialiased}
+  -webkit-font-smoothing:antialiased;overflow:hidden}
 #app{
   position:fixed;top:0;left:0;right:0;bottom:0;
-  display:flex;flex-direction:column;background:var(--sf)
+  display:flex;flex-direction:column;background:var(--sf);
+  overflow:hidden
 }
 #statusBar{
   height:env(safe-area-inset-top,0px);
@@ -55,7 +56,12 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
   position:fixed;left:0;right:0;bottom:0;
   height:calc(var(--tab-h) + env(safe-area-inset-bottom,0px));
   padding-bottom:env(safe-area-inset-bottom,0px);
-  z-index:900;box-shadow:0 -1px 0 var(--bd)
+  z-index:900;box-shadow:0 -1px 0 var(--bd);
+  /* iOS 防止 tab bar 跟著頁面滑動 */
+  -webkit-transform:translateZ(0);
+  transform:translateZ(0);
+  touch-action:none;
+  overscroll-behavior:none
 }
 #tabSp{
   height:calc(var(--tab-h) + env(safe-area-inset-bottom,0px));
@@ -1576,23 +1582,17 @@ function rMC(){
   var uH='',eH='';
   for(var i=0;i<MB.length;i++){
     var m=MB[i];
-    uH+='<div class="mc'+(unS[m.name]?' on':'')+'" onclick="togU(\''+m.name+'\')"><div class="mcb">✓</div><span class="mcn">'+sf(m.name)+'</span></div>';
-    // 多餘：只有已持有（unS 裡沒有標記=已持有）才可點
+uH+='<div class="mc'+(unS[m.name]?' on':'')+'" onclick="togU(\''+m.name+'\')"><div class="mcb">✓</div><span class="mcn">'+sf(m.name)+'</span></div>';
     var isOwned=!unS[m.name];
     if(isOwned){
-    var isOwned=!unS[m.name];
-    if(isOwned){
-  eH+='<div class="mc'+(exS[m.name]?' on':'')+'" onclick="togE(\''+m.name+'\')"><div class="mcb">✓</div><span class="mcn">'+sf(m.name)+'</span></div>';
-    }else{
-      eH+='<div class="mc" style="opacity:.35;pointer-events:none"><div class="mcb">&#x2713;</div><span class="mcn">'+sf(m.name)+'</span></div>';
-    }
+      eH+='<div class="mc'+(exS[m.name]?' on':'')+'" onclick="togE(\''+m.name+'\')"><div class="mcb">✓</div><span class="mcn">'+sf(m.name)+'</span></div>';
     }else{
       eH+='<div class="mc" style="opacity:.35;pointer-events:none"><div class="mcb">✓</div><span class="mcn">'+sf(m.name)+'</span></div>';
     }
   }
   $('unG').innerHTML=uH;$('exG').innerHTML=eH;
   var ow=MB.filter(function(m){return!unS[m.name];});
-  $('owD').innerHTML=ow.length?ow.map(function(m){return'<span style="padding:2px 8px;border-radius:99px;background:var(--green-bg);color:var(--green-tx);font-size:12px;font-weight:600">'+sf(m.name)+'</span>';}).join(''):'<span style="font-size:12px;color:var(--tx3)">（無人持有）</span>';
+$('owD').innerHTML=ow.length?ow.map(function(m){return'<span style="padding:2px 8px;border-radius:99px;background:var(--green-bg);color:var(--green-tx);font-size:12px;font-weight:600">'+sf(m.name)+'</span>';}).join(''):'<span style="font-size:12px;color:var(--tx3)">（無人持有）</span>';
 }
 function togU(n){if(unS[n])delete unS[n];else unS[n]=true;rMC();}
 function togE(n){if(unS[n]) return; if(exS[n])delete exS[n];else exS[n]=true;rMC();}
@@ -1606,7 +1606,11 @@ function saveIt(){
   if(!nm){toast('請輸入物品名稱');return;}
   var owned=MB.filter(function(m){return!unS[m.name];}).map(function(m){return m.name;});
   var extra=Object.keys(exS);
-  var pay={eventId:dtEvId,name:nm,albumId:$('it-al').value,stars:itSt||'',owned:owned,extra:extra};
+  // eventId 防呆：編輯時優先用原本的 it.eventId，新增時用 dtEvId
+  var _itEvId=dtEvId;
+  if(eItId){var _itSrc=IT.filter(function(x){return x.id===eItId;})[0];if(_itSrc&&_itSrc.eventId) _itEvId=_itSrc.eventId;}
+  if(!_itEvId){toast('❌ 無法取得活動資訊，請返回重新開啟');return;}
+  var pay={eventId:_itEvId,name:nm,albumId:$('it-al').value,stars:itSt||'',owned:owned,extra:extra};
   if(eItId){pay.id=eItId;pay.updatedAt=eItUpdAt;}
   isSaving=true;
   ld(true);
@@ -1614,7 +1618,7 @@ function saveIt(){
     ld(false);
     if(err){isSaving=false;handleSaveErr(err);return;}
     if(!eItId){
-      IT.push({id:r.id,eventId:pay.eventId,name:pay.name,albumId:pay.albumId,stars:pay.stars,owned:owned,extra:extra,updatedAt:r.updatedAt||''});
+      IT.push({id:r.id,eventId:_itEvId,name:pay.name,albumId:pay.albumId,stars:pay.stars,owned:owned,extra:extra,updatedAt:r.updatedAt||''});
     }else{
       var it=IT.filter(function(x){return x.id===eItId;})[0];
       if(it){it.name=pay.name;it.albumId=pay.albumId;it.stars=pay.stars;it.owned=owned;it.extra=extra;it.updatedAt=r.updatedAt||'';}
