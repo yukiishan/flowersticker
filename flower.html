@@ -1043,6 +1043,11 @@ function fetchAll(cb){
     });
     for(var kg=0;kg<localOnlyGrads.length;kg++) GR.push(localOnlyGrads[kg]);
 
+    // 偵測 eventId 空白的物品，記錄警告
+    var brokenItems=IT.filter(function(x){return !x.eventId;});
+    if(brokenItems.length){
+      toast('⚠ 發現 '+brokenItems.length+' 筆物品缺少活動資訊（'+brokenItems.map(function(x){return x.name;}).join('、')+'），請進入活動→物品→點該物品→儲存以修復',8000);
+    }
     saveCache();
     setSS('ok');
     if(cb) cb(true);
