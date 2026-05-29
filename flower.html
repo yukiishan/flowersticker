@@ -1956,7 +1956,7 @@ function renderStatus(){
     nm.textContent=it.name;
     card.appendChild(nm);
     // 星級
-    if(stStr){var st=document.createElement('div');st.style.cssText='font-size:10px;color:var(--amber)';st.textContent=stStr;card.appendChild(st);}
+    if(stStr){var stEl=document.createElement('div');stEl.style.cssText='font-size:10px;color:var(--amber)';stEl.textContent=stStr;card.appendChild(stEl);}
     // 各成員狀態（依篩選條件，物品一定顯示，成員清單可為空）
     for(var k=0;k<membersToShow.length;k++){
       var mn=membersToShow[k];
@@ -1998,18 +1998,24 @@ function renderStatus(){
     for(var j=0;j<items.length;j++) grid.appendChild(makeCard(items[j]));
     el.appendChild(grid);
   }
-  // 依 AL 順序排列相冊
+  // 依 AL 順序排列相冊（找不到的排最後）
   albOrder.sort(function(a,b){
-    var ai=0,bi=0;
-    for(var i=0;i<AL.length;i++){if(AL[i].id===a)ai=i;if(AL[i].id===b)bi=i;}
+    var ai=-1,bi=-1;
+    for(var i=0;i<AL.length;i++){
+      if(AL[i].id===a) ai=i;
+      if(AL[i].id===b) bi=i;
+    }
+    if(ai<0) ai=99999;
+    if(bi<0) bi=99999;
     return ai-bi;
   });
+  // 無相冊的物品排最前（第一個相冊前）
+  if(noAlbItems.length) renderSection(noAlbItems,'');
   for(var ak=0;ak<albOrder.length;ak++){
     var aid2=albOrder[ak];
     var alb2=AL.filter(function(a){return a.id===aid2;})[0];
     renderSection(byAlb[aid2],alb2?alb2.name:'');
   }
-  if(noAlbItems.length) renderSection(noAlbItems,'');
 }
 
 // ══ PAGE 3: 交換清單 ══
