@@ -1538,6 +1538,11 @@ function _doBkSave(fresh){
     if(xi>=0) baseExtra.splice(xi,1);
     if(memberOwned) baseOwned.push(bkMember);
     if(memberExtra) baseExtra.push(bkMember);
+    // 批次儲存：若 eventId 為空則跳過，避免清空試算表資料
+    if(!ch.eventId){
+      errs.push(ch.name+': 缺少活動資訊，已略過');
+      done++;next();return;
+    }
     var pay={id:ch.id,eventId:ch.eventId,name:ch.name,albumId:ch.albumId,
              stars:ch.stars,owned:baseOwned,extra:baseExtra};
     // 使用雲端的 updatedAt（不帶 updatedAt 代表不做樂觀鎖，允許合併）
