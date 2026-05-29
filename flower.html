@@ -430,20 +430,28 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
           </select>
           <button class="cnb" onclick="stAlbShift(1)" style="flex-shrink:0;touch-action:manipulation">▶</button>
         </div>
-        <!-- 篩選條件列 -->
-        <div style="background:var(--sf2);border-bottom:1px solid var(--bd);padding:7px 10px">
-          <div style="display:flex;align-items:center;gap:5px;margin-bottom:5px;flex-wrap:wrap">
-            <label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--tx2);cursor:pointer;touch-action:manipulation;white-space:nowrap">
-              <input type="checkbox" id="st-all" onchange="stToggleAll(this.checked)" style="width:14px;height:14px;accent-color:var(--accent)">全選
-            </label>
-            <div id="stMbChips" style="display:flex;flex-wrap:wrap;gap:4px;flex:1"></div>
+        <!-- 篩選條件（可收合） -->
+        <div style="background:var(--sf2);border-bottom:1px solid var(--bd)">
+          <!-- 收合列：顯示篩選摘要，點擊展開/收合 -->
+          <div id="stFilterBar" onclick="stToggleFilter()" style="display:flex;align-items:center;gap:7px;padding:7px 10px;cursor:pointer;touch-action:manipulation">
+            <svg id="stFilterArrow" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2.5" stroke-linecap="round" style="flex-shrink:0;transition:transform .2s"><polyline points="6,9 12,15 18,9"/></svg>
+            <span style="font-size:11px;color:var(--tx3);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="stFilterSummary">篩選條件</span>
+            <button onclick="event.stopPropagation();stClearFilter()" style="background:none;border:1px solid var(--bd);border-radius:7px;padding:2px 7px;font-size:11px;color:var(--tx3);cursor:pointer;touch-action:manipulation;flex-shrink:0">清除</button>
           </div>
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-            <span style="font-size:11px;color:var(--tx3)">顯示：</span>
-            <label style="display:flex;align-items:center;gap:2px;font-size:12px;cursor:pointer;touch-action:manipulation"><input type="checkbox" id="st-unowned" checked onchange="renderStatus()" style="accent-color:var(--red)">未持有</label>
-            <label style="display:flex;align-items:center;gap:2px;font-size:12px;cursor:pointer;touch-action:manipulation"><input type="checkbox" id="st-extra" checked onchange="renderStatus()" style="accent-color:var(--amber)">多餘</label>
-            <label style="display:flex;align-items:center;gap:2px;font-size:12px;cursor:pointer;touch-action:manipulation"><input type="checkbox" id="st-owned" onchange="renderStatus()" style="accent-color:var(--green)">已持有</label>
-            <button onclick="stClearFilter()" style="margin-left:auto;background:none;border:1px solid var(--bd);border-radius:7px;padding:3px 8px;font-size:11px;color:var(--tx3);cursor:pointer;touch-action:manipulation">清除篩選</button>
+          <!-- 展開內容 -->
+          <div id="stFilterBody" style="display:none;padding:0 10px 8px">
+            <div style="display:flex;align-items:center;gap:5px;margin-bottom:5px;flex-wrap:wrap">
+              <label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--tx2);cursor:pointer;touch-action:manipulation;white-space:nowrap">
+                <input type="checkbox" id="st-all" onchange="stToggleAll(this.checked)" style="width:14px;height:14px;accent-color:var(--accent)">全選
+              </label>
+              <div id="stMbChips" style="display:flex;flex-wrap:wrap;gap:4px;flex:1"></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <span style="font-size:11px;color:var(--tx3)">顯示：</span>
+              <label style="display:flex;align-items:center;gap:2px;font-size:12px;cursor:pointer;touch-action:manipulation"><input type="checkbox" id="st-unowned" checked onchange="stUpdateSummary();renderStatus()" style="accent-color:var(--red)">未持有</label>
+              <label style="display:flex;align-items:center;gap:2px;font-size:12px;cursor:pointer;touch-action:manipulation"><input type="checkbox" id="st-extra" checked onchange="stUpdateSummary();renderStatus()" style="accent-color:var(--amber)">多餘</label>
+              <label style="display:flex;align-items:center;gap:2px;font-size:12px;cursor:pointer;touch-action:manipulation"><input type="checkbox" id="st-owned" onchange="stUpdateSummary();renderStatus()" style="accent-color:var(--green)">已持有</label>
+            </div>
           </div>
         </div>
       </div>
@@ -1845,14 +1853,35 @@ function _stRenderChips(){
   for(var i=0;i<MB.length;i++){
     var m=MB[i];
     h+='<label style="display:flex;align-items:center;gap:2px;font-size:11px;cursor:pointer;touch-action:manipulation;background:var(--sf);border:1.5px solid var(--bd);border-radius:12px;padding:2px 7px;white-space:nowrap">'
-      +'<input type="checkbox" value="'+sf(m.name)+'"'+(stMbSel[m.name]?' checked':'')+' onchange="stMbSel[this.value]=this.checked;_stSyncAllCb();renderStatus()" style="width:12px;height:12px;accent-color:var(--accent)">'+sf(m.name)+'</label>';
+      +'<input type="checkbox" value="'+sf(m.name)+'"'+(stMbSel[m.name]?' checked':'')+' onchange="stMbSel[this.value]=this.checked;_stSyncAllCb();stUpdateSummary();renderStatus()" style="width:12px;height:12px;accent-color:var(--accent)">'+sf(m.name)+'</label>';
   }
   chips.innerHTML=h;
+}
+var _stFilterOpen=false;
+function stToggleFilter(){
+  _stFilterOpen=!_stFilterOpen;
+  var body=$('stFilterBody'),arrow=$('stFilterArrow');
+  if(body) body.style.display=_stFilterOpen?'block':'none';
+  if(arrow) arrow.style.transform=_stFilterOpen?'rotate(180deg)':'rotate(0deg)';
+}
+function stUpdateSummary(){
+  var lbl=$('stFilterSummary'); if(!lbl) return;
+  // 成員部分
+  var selMbs=MB.filter(function(m){return stMbSel[m.name];});
+  var mbTxt=selMbs.length?selMbs.map(function(m){return m.name;}).join('、'):'全部成員';
+  // 狀態部分
+  var states=[];
+  if(($('st-unowned')||{}).checked) states.push('未持有');
+  if(($('st-extra')||{}).checked)   states.push('多餘');
+  if(($('st-owned')||{}).checked)   states.push('已持有');
+  var stTxt=states.length?states.join('/') :'無';
+  lbl.textContent=mbTxt+' · '+stTxt;
 }
 function stToggleAll(checked){
   var chips=$('stMbChips'); if(!chips) return;
   var cbs=chips.querySelectorAll('input[type=checkbox]');
   for(var i=0;i<cbs.length;i++){cbs[i].checked=checked;stMbSel[cbs[i].value]=checked;}
+  stUpdateSummary();
   renderStatus();
 }
 function _stSyncAllCb(){
@@ -1865,13 +1894,15 @@ function stClearFilter(){
   if(chips){var cbs=chips.querySelectorAll('input[type=checkbox]');for(var i=0;i<cbs.length;i++) cbs[i].checked=false;}
   var a=$('st-all'); if(a) a.checked=false;
   var uo=$('st-unowned'),eo=$('st-extra'),oo=$('st-owned');
-  if(uo) uo.checked=true; if(eo) eo.checked=false; if(oo) oo.checked=false;
+  if(uo) uo.checked=true; if(eo) eo.checked=true; if(oo) oo.checked=false;
+  stUpdateSummary();
   renderStatus();
 }
 
 function renderStatus(){
   _stInitEvSel();
   _stRenderChips();
+  stUpdateSummary();
   var el=$('stGrid'); if(!el) return;
   var evId=($('st-ev')||{}).value||'';
   if(!evId){
