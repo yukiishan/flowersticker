@@ -1761,7 +1761,8 @@ function onStEv(){
   var sel=$('st-ev'); if(!sel) return;
   var revE=_stRevE();
   for(var i=0;i<revE.length;i++){if(revE[i].id===sel.value){stEvIdx=i;break;}}
-  stAlbIdx=0;
+  var albs=_stEvAlbs(revE[stEvIdx]?revE[stEvIdx].id:'');
+  stAlbIdx=albs.length>0?1:0; // 切換活動時預設第一個相冊
   _stSyncAlbSel(revE[stEvIdx]?revE[stEvIdx].id:'');
   renderStatus();
 }
@@ -1814,7 +1815,11 @@ function _stInitEvSel(){
   if(revE.length>0){
     stEvIdx=Math.min(stEvIdx,revE.length-1);
     sel.value=revE[stEvIdx].id;
-    _stSyncAlbSel(revE[stEvIdx].id);
+    var evId=revE[stEvIdx].id;
+    var albs=_stEvAlbs(evId);
+    // 預設顯示第一個相冊（若尚未選過）
+    if(stAlbIdx===0&&albs.length>0) stAlbIdx=1;
+    _stSyncAlbSel(evId);
   }
 }
 // 更新成員 chips（只在 MB 變動時重建）
