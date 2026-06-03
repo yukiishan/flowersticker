@@ -2524,12 +2524,77 @@ function openMaint(t){
 function rMbL(){
   var el=$('mbL');
   if(!MB.length){el.innerHTML='<div style="text-align:center;padding:28px;color:var(--tx3)">尚無成員</div>';return;}
-  var out='';
+  el.innerHTML='';
   for(var i=0;i<MB.length;i++){
-    var m=MB[i];
-    out+='<div class="mit"><div style="width:28px;height:28px;border-radius:7px;background:'+m.color+'20;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:'+m.color+';flex-shrink:0">'+sf(m.name[0])+'</div><span class="mil">'+sf(m.name)+'</span><button class="dbs" onclick="delMb(\''+m.id+'\')">刪除</button></div>';
+    (function(m){
+      var row=document.createElement('div');
+      row.className='mit';
+      var av=document.createElement('div');
+      av.style.cssText='width:28px;height:28px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:'+m.color+'20;color:'+m.color;
+      av.textContent=m.name[0]||'?';
+      row.appendChild(av);
+      var inp=document.createElement('input');
+      inp.className='mil';
+      inp.value=m.name;
+      inp.setAttribute('data-orig',m.name);
+      inp.style.cssText='flex:1;font-size:14px;padding:4px 7px;border-radius:7px;border:1px solid transparent;background:transparent;min-width:0;font-family:inherit;color:var(--tx)';
+      inp.addEventListener('focus',function(){this.style.background='var(--sf2)';this.style.borderColor='var(--bd)';});
+      inp.addEventListener('blur',function(){
+        var newName=this.value.replace(/^\s+|\s+$/g,'');
+        var orig=this.getAttribute('data-orig');
+        this.style.background='transparent';this.style.borderColor='transparent';
+        if(!newName||newName===orig){this.value=orig||newName;return;}
+        if(MB.filter(function(x){return x.name===newName&&x.id!==m.id;}).length){
+          toast('此成員名稱已存在');this.value=orig;return;
+        }
+        renameMb(m.id,orig,newName,this);
+      });
+      inp.addEventListener('keydown',function(e){
+        if(e.key==='Enter'){e.preventDefault();this.blur();}
+        if(e.key==='Escape'){this.value=this.getAttribute('data-orig');this.blur();}
+      });
+      row.appendChild(inp);
+      var dBtn=document.createElement('button');
+      dBtn.className='dbs';dBtn.textContent='刪除';dBtn.setAttribute('style','flex-shrink:0;touch-action:manipulation');
+      dBtn.addEventListener('click',function(){delMb(m.id);});
+      row.appendChild(dBtn);
+      el.appendChild(row);
+    })(MB[i]);
   }
-  el.innerHTML=out;
+}
+
+function renameMb(id,oldName,newName,inpEl){
+  if(!confirm('確定將成員「'+oldName+'」改名為「'+newName+'」？\n物品持有、交換、畢業紀錄的相關資料都會一併更新。')){
+    if(inpEl){inpEl.value=oldName;}return;
+  }
+  isSaving=true;ld(true);
+  apiXHR('renameMember',{id:id,oldName:oldName,newName:newName},function(err){
+    ld(false);
+    if(err){isSaving=false;if(inpEl) inpEl.value=oldName;toast('❌ '+err.message);return;}
+    // 更新本地 MB
+    var mb=MB.filter(function(m){return m.id===id;})[0];
+    if(mb) mb.name=newName;
+    // 更新 IT owned/extra
+    for(var i=0;i<IT.length;i++){
+      var oi=IT[i].owned.indexOf(oldName);if(oi>=0) IT[i].owned[oi]=newName;
+      var xi=IT[i].extra.indexOf(oldName);if(xi>=0) IT[i].extra[xi]=newName;
+    }
+    // 更新 TR memberA/memberB
+    for(var j=0;j<TR.length;j++){
+      if(TR[j].memberA===oldName) TR[j].memberA=newName;
+      if(TR[j].memberB===oldName) TR[j].memberB=newName;
+    }
+    // 更新 GR memberName
+    for(var k=0;k<GR.length;k++){
+      if(GR[k].memberName===oldName) GR[k].memberName=newName;
+    }
+    // 更新 stMbSel key
+    if(stMbSel[oldName]!==undefined){stMbSel[newName]=stMbSel[oldName];delete stMbSel[oldName];}
+    saveCache();releaseSaving();
+    if(inpEl) inpEl.setAttribute('data-orig',newName);
+    rMbL();updSC();refreshSels();renderAll();
+    toast('✓ 「'+oldName+'」已改名為「'+newName+'」');
+  });
 }
 function addMb(){
   var inp=$('nMb'),nm=inp.value.replace(/^\s+|\s+$/g,'');if(!nm) return;
