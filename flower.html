@@ -1876,17 +1876,27 @@ function _stInitEvSel(){
     })(evId);
   }
 }
-// 更新成員 chips（只在 MB 變動時重建）
+// 更新成員 chips
 function _stRenderChips(){
   var chips=$('stMbChips'); if(!chips) return;
-  if(chips.childElementCount===MB.length) return; // 未變動
-  var h='';
-  for(var i=0;i<MB.length;i++){
-    var m=MB[i];
-    h+='<label style="display:flex;align-items:center;gap:2px;font-size:11px;cursor:pointer;touch-action:manipulation;background:var(--sf);border:1.5px solid var(--bd);border-radius:12px;padding:2px 7px;white-space:nowrap">'
-      +'<input type="checkbox" value="'+sf(m.name)+'"'+(stMbSel[m.name]?' checked':'')+' onchange="stMbSel[this.value]=this.checked;_stSyncAllCb();stUpdateSummary();renderStatus()" style="width:12px;height:12px;accent-color:var(--accent)">'+sf(m.name)+'</label>';
+  var snap=MB.map(function(m){return m.name;}).join(',');
+  if(chips.getAttribute('data-snap')!==snap){
+    // MB 有變動（新增/刪除/改名）→ 重建 DOM
+    chips.setAttribute('data-snap',snap);
+    var h='';
+    for(var i=0;i<MB.length;i++){
+      var m=MB[i];
+      h+='<label style="display:flex;align-items:center;gap:2px;font-size:11px;cursor:pointer;touch-action:manipulation;background:var(--sf);border:1.5px solid var(--bd);border-radius:12px;padding:2px 7px;white-space:nowrap">'
+        +'<input type="checkbox" value="'+sf(m.name)+'"'+(stMbSel[m.name]?' checked':'')+' onchange="stMbSel[this.value]=this.checked;_stSyncAllCb();stUpdateSummary();renderStatus()" style="width:12px;height:12px;accent-color:var(--accent)">'+sf(m.name)+'</label>';
+    }
+    chips.innerHTML=h;
+  } else {
+    // MB 未變動 → 只同步 checked 狀態（避免勾選後消失）
+    var cbs=chips.querySelectorAll('input[type=checkbox]');
+    for(var j=0;j<cbs.length;j++){
+      cbs[j].checked=!!stMbSel[cbs[j].value];
+    }
   }
-  chips.innerHTML=h;
 }
 var _stFilterOpen=false;
 function stToggleFilter(){
@@ -2592,7 +2602,7 @@ function renameMb(id,oldName,newName,inpEl){
     if(stMbSel[oldName]!==undefined){stMbSel[newName]=stMbSel[oldName];delete stMbSel[oldName];}
     saveCache();releaseSaving();
     if(inpEl) inpEl.setAttribute('data-orig',newName);
-    rMbL();updSC();refreshSels();renderAll();
+    rMbL();updSC();refreshSels();renderAll();renderStatus();
     toast('✓ 「'+oldName+'」已改名為「'+newName+'」');
   });
 }
