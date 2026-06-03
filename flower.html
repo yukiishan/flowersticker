@@ -1473,99 +1473,77 @@ function saveBkEdit(){
   isSaving=true;
   ld(true);
   $('bkSavBtn').disabled=true;
-  // 先拉最新資料，再以成員為基準做 merge，避免不同人同時改不同成員持有時互相覆蓋
-  apiXHR('getAll',null,function(errG,fresh){
-    if(errG){
-      // 拉取失敗，降級使用本地資料（可能有衝突）
-      _doBkSave(null);
-      return;
+
+  // 以本地 IT 為底做 merge（本地已是最新，不需要 getAll 前置）
+  var itemsToSave=[];
+  for(var i=0;i<ids.length;i++){
+    var ch=bkChanges[ids[i]];
+    if(!ch.eventId){
+      // 跳過缺少 eventId 的物品
+      continue;
     }
-    _doBkSave(fresh);
-  });
-}
-function _doBkSave(fresh){
-  var ids=Object.keys(bkChanges);
-  var total=ids.length;
-  var done=0;
-  var errs=[];
-  // 建立 fresh items 的 id→item map
-  var freshMap={};
-  if(fresh&&fresh.items){
-    for(var fi=0;fi<fresh.items.length;fi++){
-      freshMap[fresh.items[fi].id]=fresh.items[fi];
-    }
-  }
-  function next(){
-    if(done>=total){
-      ld(false);
-      $('bkSavBtn').disabled=false;
-      if(errs.length){
-        isSaving=false;
-        toast('⚠ 部分儲存失敗（'+errs.length+'/'+total+'）：'+errs[0]);
-      }else{
-        // 更新 local IT（只改 bkMember 的持有欄位）
-        for(var i=0;i<ids.length;i++){
-          var ch=bkChanges[ids[i]];
-          var it=IT.filter(function(x){return x.id===ch.id;})[0];
-          if(it){it.owned=ch.owned;it.extra=ch.extra;it.updatedAt=ch._newUpdAt||it.updatedAt;}
-        }
-        saveCache();
-        releaseSaving();
-        bkChanges={};
-        cp('pp-bkEd');
-        rItems();rEv();
-        toast('✓ 已儲存 '+total+' 筆物品');
-      }
-      return;
-    }
-    var id=ids[done];
-    var ch=bkChanges[id];
-    // 取雲端最新資料做 merge
-    var freshIt=freshMap[id];
-    var baseOwned,baseExtra,baseUpdAt;
-    if(freshIt){
-      // 有雲端最新資料：以雲端為底，只改 bkMember 的部分
-      baseOwned=parseArr(freshIt.owned);
-      baseExtra=parseArr(freshIt.extra);
-      baseUpdAt=freshIt.updatedAt||'';
-    }else{
-      // 無雲端資料：用本地
-      var localIt=IT.filter(function(x){return x.id===id;})[0];
-      baseOwned=(localIt?localIt.owned||[]:[]).slice();
-      baseExtra=(localIt?localIt.extra||[]:[]).slice();
-      baseUpdAt=localIt?localIt.updatedAt||'':'';
-    }
-    // 對 bkMember 做 merge：
-    // ch.owned 包含 bkMember 代表該成員已持有，否則未持有
+    // 從本地 IT 取最新的 owned/extra 作為 base
+    var localIt=IT.filter(function(x){return x.id===ch.id;})[0];
+    var baseOwned=(localIt?parseArr(localIt.owned):[]).slice();
+    var baseExtra=(localIt?parseArr(localIt.extra):[]).slice();
+    // 只改 bkMember 的部分
     var memberOwned=(ch.owned||[]).indexOf(bkMember)>=0;
     var memberExtra=(ch.extra||[]).indexOf(bkMember)>=0;
-    // 從 base 移除 bkMember，再依選擇加回
     var mi=baseOwned.indexOf(bkMember);
     if(mi>=0) baseOwned.splice(mi,1);
     var xi=baseExtra.indexOf(bkMember);
     if(xi>=0) baseExtra.splice(xi,1);
     if(memberOwned) baseOwned.push(bkMember);
     if(memberExtra) baseExtra.push(bkMember);
-    // 批次儲存：若 eventId 為空則跳過，避免清空試算表資料
-    if(!ch.eventId){
-      errs.push(ch.name+': 缺少活動資訊，已略過');
-      done++;next();return;
-    }
-    var pay={id:ch.id,eventId:ch.eventId,name:ch.name,albumId:ch.albumId,
-             stars:ch.stars,owned:baseOwned,extra:baseExtra};
-    // 使用雲端的 updatedAt（不帶 updatedAt 代表不做樂觀鎖，允許合併）
-    // 批次編輯以成員為衝突基準，不使用物品層級的樂觀鎖
-    apiXHR('saveItem',pay,function(err,r){
-      if(err){
-        errs.push(ch.name+':'+err.message);
-      }else{
-        if(r&&r.updatedAt) ch._newUpdAt=r.updatedAt;
-      }
-      done++;
-      next();
+    itemsToSave.push({
+      id:ch.id, eventId:ch.eventId, name:ch.name,
+      albumId:ch.albumId, stars:ch.stars,
+      owned:baseOwned, extra:baseExtra
     });
   }
-  next();
+
+  if(!itemsToSave.length){
+    ld(false);isSaving=false;$('bkSavBtn').disabled=false;
+    toast('沒有可儲存的變更（部分物品缺少活動資訊）');return;
+  }
+
+  // 一次 API 呼叫送出所有變更
+  apiXHR('batchSaveItems',{items:itemsToSave},function(err,r){
+    ld(false);
+    $('bkSavBtn').disabled=false;
+    if(err){
+      isSaving=false;
+      toast('❌ 儲存失敗：'+err.message);return;
+    }
+    // 處理回傳結果
+    var results=r&&r.results?r.results:[];
+    var nowUpdAt=r&&r.updatedAt?r.updatedAt:'';
+    var failNames=[];
+    for(var i=0;i<results.length;i++){
+      var res=results[i];
+      if(res.ok){
+        // 更新本地 IT
+        var saved=itemsToSave.filter(function(x){return x.id===res.id;})[0];
+        if(saved){
+          var it=IT.filter(function(x){return x.id===res.id;})[0];
+          if(it){it.owned=saved.owned;it.extra=saved.extra;it.updatedAt=res.updatedAt||nowUpdAt;}
+        }
+      }else{
+        var failIt=itemsToSave.filter(function(x){return x.id===res.id;})[0];
+        failNames.push(failIt?failIt.name:res.id);
+      }
+    }
+    saveCache();
+    releaseSaving();
+    bkChanges={};
+    cp('pp-bkEd');
+    rItems();rEv();
+    if(failNames.length){
+      toast('⚠ 部分儲存失敗：'+failNames.join('、'));
+    }else{
+      toast('✓ 已儲存 '+itemsToSave.length+' 筆物品');
+    }
+  });
 }
 
 // ══ end 批次持有狀態編輯 ══
