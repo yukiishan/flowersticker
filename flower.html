@@ -658,7 +658,7 @@ body{margin:0;padding:0;height:100%;background:#9A7A78;
       </div>
       <div id="bkStateFilterBody" style="display:none;padding:6px 13px 10px">
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <label style="display:flex;align-items:center;gap:3px;font-size:12px;cursor:pointer;touch-action:manipulation"><input type="checkbox" id="bkF-unowned" value="unowned" onchange="onBkStateFilter()" style="accent-color:var(--red)">未持有</label>
+          <label style="display:flex;align-items:center;gap:3px;font-size:12px;cursor:pointer;touch-action:manipulation"><input type="checkbox" id="bkF-unowned" value="unowned" checked onchange="onBkStateFilter()" style="accent-color:var(--red)">未持有</label>
           <label style="display:flex;align-items:center;gap:3px;font-size:12px;cursor:pointer;touch-action:manipulation"><input type="checkbox" id="bkF-owned" value="owned" onchange="onBkStateFilter()" style="accent-color:var(--green)">已持有</label>
           <label style="display:flex;align-items:center;gap:3px;font-size:12px;cursor:pointer;touch-action:manipulation"><input type="checkbox" id="bkF-extra" value="extra" onchange="onBkStateFilter()" style="accent-color:var(--amber)">多餘</label>
           <button onclick="clearBkStateFilter()" style="font-size:11px;background:none;border:1px solid var(--bd);border-radius:8px;padding:3px 8px;cursor:pointer;color:var(--tx3);touch-action:manipulation">全部顯示</button>
@@ -1401,15 +1401,19 @@ function clearEvSearch(){
 var bkChanges = {};
 var bkMember  = '';
 var _itStarSel=[];
-var _bkStateFilter=[];
+var _bkStateFilter=['unowned'];
 
 function openBkEdit(){
   bkChanges = {};
   bkMember  = '';
-  _bkStateFilter=[];
+  _bkStateFilter=['unowned'];
   _bkStateOpen=false;
   var bsf=$('bkStateFilterBody');if(bsf) bsf.style.display='none';
   var bsaw=$('bkStateArrow');if(bsaw) bsaw.style.transform='';
+  // 重置篩選 checkbox
+  var states=['unowned','owned','extra'];
+  for(var ri=0;ri<states.length;ri++){var rcb=$('bkF-'+states[ri]);if(rcb) rcb.checked=(states[ri]==='unowned');}
+  var sum=$('bkStateSummary');if(sum) sum.textContent='篩選：未持有';
   var sel = $('bk-mb');
   if(!sel) return;
   // 填充成員清單
