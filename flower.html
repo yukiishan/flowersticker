@@ -830,6 +830,12 @@ if(typeof Element!=='undefined'&&!Element.prototype.closest){
     return null;
   };
 }
+// 前端 uid：16位 hex（與 GAS 端格式一致，用於冪等新增）
+function genId(){
+  var h='';
+  for(var i=0;i<16;i++) h+='0123456789abcdef'[Math.floor(Math.random()*16)];
+  return h;
+}
 var API = 'https://script.google.com/macros/s/AKfycbzJSm_7k5RCI__5zehjIv7swtbxioee_4BGfjzD7QV7Ig0yQq_BBJrIc8QZpVrni5jO/exec';
 
 // ── helpers ──
@@ -2593,25 +2599,29 @@ function saveTr(){
     if(countB>=3){toast('⚠ '+mb+' 今日已有 '+countB+' 筆交換紀錄，已達上限 3 筆！');return;}
   }
   var eid=$('tr-ev').value;
-  var pay={eventId:eid,tradeDate:dt,memberA:ma,itemA:itemA,cntA:cntA,memberB:mb,itemB:itemB,cntB:cntB,note:$('tr-nt').value||''};
+  // 新增時預先產生 id（冪等操作：即使 GAS 超時重試，id 相同不會重複新增）
+  var pendingId=eTrId||genId();
+  var pay={id:pendingId,eventId:eid,tradeDate:dt,memberA:ma,itemA:itemA,cntA:cntA,memberB:mb,itemB:itemB,cntB:cntB,note:$('tr-nt').value||''};
   if(eTrId) pay.updatedAt=eTrUpdAt;
-  if(eTrId) pay.id=eTrId;
   isSaving=true;
   ld(true);
   apiXHR('saveTrade',pay,function(err,r){
     ld(false);
-    if(err){ld(false);handleSaveErr(err);return;}
-    if(!eTrId){
-      TR.push({id:r.id,eventId:pay.eventId,tradeDate:pay.tradeDate,
+    if(err){handleSaveErr(err);return;}
+    // 不論新增或編輯，用 pendingId 找/建本地紀錄
+    var existing=TR.filter(function(x){return x.id===pendingId;})[0];
+    if(existing){
+      existing.eventId=pay.eventId;existing.tradeDate=pay.tradeDate;
+      existing.memberA=pay.memberA;existing.itemA=pay.itemA;existing.cntA=pay.cntA;
+      existing.memberB=pay.memberB;existing.itemB=pay.itemB;existing.cntB=pay.cntB;
+      existing.note=pay.note;existing.updatedAt=r.updatedAt||'';
+    }else{
+      TR.push({id:pendingId,eventId:pay.eventId,tradeDate:pay.tradeDate,
         memberA:pay.memberA,itemA:pay.itemA,cntA:pay.cntA,
         memberB:pay.memberB,itemB:pay.itemB,cntB:pay.cntB,note:pay.note,updatedAt:r.updatedAt||''});
-    }else{
-      var t=TR.filter(function(x){return x.id===eTrId;})[0];
-      if(t){t.eventId=pay.eventId;t.tradeDate=pay.tradeDate;
-        t.memberA=pay.memberA;t.itemA=pay.itemA;t.cntA=pay.cntA;
-        t.memberB=pay.memberB;t.itemB=pay.itemB;t.cntB=pay.cntB;t.note=pay.note;t.updatedAt=r.updatedAt||'';}
     }
-    eTrUpdAt=r.updatedAt||'';showUpdAt('uat-trEd',eTrUpdAt);
+    eTrUpdAt=r.updatedAt||'';eTrId=pendingId;
+    showUpdAt('uat-trEd',eTrUpdAt);
     saveCache();releaseSaving();cp('pp-trEd');renderCal();renderTrList();toast('✓ 交換紀錄已儲存');
   });
 }
