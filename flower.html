@@ -2869,10 +2869,12 @@ function addAlbumInEv(){
   if(!eMaEvId){toast('請先儲存活動，再新增相冊');return;}
   isSaving=true;
   ld(true);
-  apiXHR('saveAlbum',{name:nm,eventId:eMaEvId},function(err,r){
+  var newAlbId=genId();
+  apiXHR('saveAlbum',{id:newAlbId,name:nm,eventId:eMaEvId},function(err,r){
     ld(false);
     if(err){isSaving=false;toast('❌ '+err.message);return;}
-    AL.push({id:r.id,name:nm,eventId:eMaEvId});
+    var albId=r.id||newAlbId;
+    AL.push({id:albId,name:nm,eventId:eMaEvId});
     saveCache();releaseSaving();inp.value='';
     renderAlbB(eMaEvId);
     updSC();refreshSels();toast('✓ 相冊已新增');
@@ -2884,7 +2886,9 @@ function saveMaEv(){
   var nm=$('mev-nm').value.replace(/^\s+|\s+$/g,'');
   if(!nm){toast('請輸入活動名稱');return;}
   var pay={name:nm,startDate:$('mev-s').value,endDate:$('mev-e').value};
-  if(eMaEvId){pay.id=eMaEvId;pay.updatedAt=eMaEvUpdAt;}
+  var pendingMaEvId=eMaEvId||genId();
+  pay.id=pendingMaEvId;
+  if(eMaEvId) pay.updatedAt=eMaEvUpdAt;
   isSaving=true;
   ld(true);
   apiXHR('saveEvent',pay,function(err,r){
