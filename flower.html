@@ -1223,19 +1223,21 @@ function saveEv(){
   var nm=$('ev-nm').value.replace(/^\s+|\s+$/g,'');
   if(!nm){toast('請輸入活動名稱');return;}
   var pay={name:nm,startDate:$('ev-s').value,endDate:$('ev-e').value};
-  if(eEvId){pay.id=eEvId;pay.updatedAt=eEvUpdAt;}
+  var pendingEvId=eEvId||genId();
+  pay.id=pendingEvId;
+  if(eEvId) pay.updatedAt=eEvUpdAt;
   isSaving=true;
   ld(true);
   apiXHR('saveEvent',pay,function(err,r){
     ld(false);
     if(err){ld(false);handleSaveErr(err);return;}
-    if(!eEvId){
-      E.push({id:r.id,name:pay.name,startDate:pay.startDate,endDate:pay.endDate,updatedAt:r.updatedAt||''});
+    var evEx=E.filter(function(e){return e.id===pendingEvId;})[0];
+    if(evEx){
+      evEx.name=pay.name;evEx.startDate=pay.startDate;evEx.endDate=pay.endDate;evEx.updatedAt=r.updatedAt||'';
     }else{
-      var ev=E.filter(function(e){return e.id===eEvId;})[0];
-      if(ev){ev.name=pay.name;ev.startDate=pay.startDate;ev.endDate=pay.endDate;ev.updatedAt=r.updatedAt||'';}
+      E.push({id:pendingEvId,name:pay.name,startDate:pay.startDate,endDate:pay.endDate,updatedAt:r.updatedAt||''});
     }
-    eEvUpdAt=r.updatedAt||'';showUpdAt('uat-evEd',eEvUpdAt);
+    eEvId=pendingEvId;eEvUpdAt=r.updatedAt||'';showUpdAt('uat-evEd',eEvUpdAt);
     saveCache();releaseSaving();cp('pp-evEd');renderAll();toast('✓ 活動已儲存');
   });
 }
@@ -1750,7 +1752,8 @@ function saveIt(){
   var _itEvId=dtEvId;
   if(eItId){var _itSrc=IT.filter(function(x){return x.id===eItId;})[0];if(_itSrc&&_itSrc.eventId) _itEvId=_itSrc.eventId;}
   if(!_itEvId){toast('❌ 無法取得活動資訊，請返回重新開啟');return;}
-  var pay={eventId:_itEvId,name:nm,albumId:$('it-al').value,stars:itSt||'',owned:owned,extra:extra};
+  var pendingItId=eItId||genId();
+  var pay={id:pendingItId,eventId:_itEvId,name:nm,albumId:$('it-al').value,stars:itSt||'',owned:owned,extra:extra};
   if(eItId){pay.id=eItId;pay.updatedAt=eItUpdAt;}
   isSaving=true;
   ld(true);
@@ -1758,7 +1761,13 @@ function saveIt(){
     ld(false);
     if(err){isSaving=false;handleSaveErr(err);return;}
     if(!eItId){
-      IT.push({id:r.id,eventId:_itEvId,name:pay.name,albumId:pay.albumId,stars:pay.stars,owned:owned,extra:extra,updatedAt:r.updatedAt||''});
+      var itEx=IT.filter(function(x){return x.id===pendingItId;})[0];
+    if(itEx){
+      itEx.eventId=_itEvId;itEx.name=pay.name;itEx.albumId=pay.albumId;itEx.stars=pay.stars;itEx.owned=owned;itEx.extra=extra;itEx.updatedAt=r.updatedAt||'';
+    }else{
+      IT.push({id:pendingItId,eventId:_itEvId,name:pay.name,albumId:pay.albumId,stars:pay.stars,owned:owned,extra:extra,updatedAt:r.updatedAt||''});
+    }
+    eItId=pendingItId;
     }else{
       var it=IT.filter(function(x){return x.id===eItId;})[0];
       if(it){it.name=pay.name;it.albumId=pay.albumId;it.stars=pay.stars;it.owned=owned;it.extra=extra;it.updatedAt=r.updatedAt||'';}
@@ -1857,7 +1866,9 @@ function saveGr(){
   }
   var m=MB.filter(function(mb){return mb.name===mv;})[0];
   var pay={eventId:eid,memberId:m?m.id:'',memberName:m?m.name:mv,gradDate:dt};
-  if(eGrId){pay.id=eGrId;pay.updatedAt=eGrUpdAt;}
+  var pendingGrId=eGrId||genId();
+  pay.id=pendingGrId;
+  if(eGrId) pay.updatedAt=eGrUpdAt;
   isSaving=true;
   ld(true);
   apiXHR('saveGrad',pay,function(err,r){
